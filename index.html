@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Sticks Cup</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Gaegu&display=swap');
+
+        :root {
+            --pencil-gray: #4a4a4a;
+            --crayon-blue: #3182ce;
+            --tater-tot-gold: #f6ad55;
+            --table-brown: #a67c52;
+            --spilled-milk: rgba(255, 255, 255, 0.7);
+        }
+
+        body {
+            font-family: 'Gaegu', cursive;
+            background-color: var(--table-brown);
+            background-image: 
+                linear-gradient(rgba(100, 70, 40, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 70, 40, 0.2) 1px, transparent 1px),
+                url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.1"/></svg>');
+            background-size: 50px 50px, 50px 50px, auto;
+            color: var(--pencil-gray);
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 { 
+            font-family: 'Permanent Marker', cursive;
+            font-size: 3.2rem;
+            color: #d9534f; 
+            text-shadow: 2px 2px 0 #fff;
+            margin: 0;
+            transform: rotate(-1.5deg);
+        }
+
+        #music-btn {
+            font-family: 'Permanent Marker', cursive;
+            background: #9b59b6;
+            color: white;
+            border: 3px solid var(--pencil-gray);
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+        }
+        #music-btn:hover { background: #8e44ad; }
+
+        .tournament-badge {
+            font-family: 'Permanent Marker', cursive;
+            background: #48bb78;
+            color: white;
+            font-size: 1.5rem;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            border: 3px solid var(--pencil-gray);
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+            transform: rotate(1deg);
+            margin: 15px 0;
+        }
+
+        .status {
+            font-family: 'Gaegu', cursive;
+            font-size: 26px;
+            font-weight: bold;
+            background: var(--spilled-milk);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 3px dashed var(--pencil-gray);
+            margin: 10px auto 20px auto;
+            display: inline-block;
+            min-height: 40px;
+            max-width: 600px;
+        }
+
+        .game-board {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            max-width: 800px;
+            margin: 0 auto;
+            gap: 20px;
+        }
+
+        .player-side {
+            background-color: rgba(255, 255, 255, 0.9);
+            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.15" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.1"/></svg>');
+            padding: 20px;
+            border-radius: 15px;
+            border: 4px solid #666; 
+            width: 45%;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .active-turn-card {
+            border: 5px solid var(--crayon-blue);
+            transform: scale(1.03) rotate(0.5deg);
+            box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
+        }
+
+        .player-side h3 {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 2rem;
+            margin-top: 0;
+            margin-bottom: 25px;
+            text-decoration: underline;
+        }
+
+        .stick {
+            display: inline-block;
+            width: 12px;
+            height: 60px;
+            background-color: var(--pencil-gray);
+            margin: 0 5px;
+            border-radius: 4px;
+            transform: rotate(5deg);
+            transition: all 0.3s ease-out;
+        }
+
+        .stick:nth-child(even) { transform: rotate(-5deg); }
+        .stick:nth-child(3) { transform: rotate(8deg); }
+        .stick:nth-child(4) { transform: rotate(-8deg); }
+
+        .hand-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80px;
+            width: 90%;
+            margin: 10px auto;
+            padding: 10px;
+            cursor: pointer;
+            border: 4px solid var(--pencil-gray);
+            border-radius: 15px;
+            background-color: #fff;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .hand-btn:not(.dead):hover {
+            background-color: #eee;
+            transform: translateY(-3px);
+        }
+
+        .hand-label {
+            position: absolute;
+            top: -15px;
+            left: 10px;
+            font-family: 'Gaegu', cursive;
+            font-weight: bold;
+            font-size: 1.2rem;
+            background: #fff;
+            padding: 0 5px;
+            border: 2px solid var(--pencil-gray);
+            border-radius: 5px;
+        }
+
+        .split-btn {
+            display: block;
+            width: 85%;
+            margin: 30px auto 10px auto;
+            padding: 12px;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.2rem;
+            cursor: pointer;
+            background-color: var(--crayon-blue);
+            color: white;
+            border: 4px solid var(--pencil-gray);
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .split-btn:hover:not(:disabled) { background-color: #2b6cb0; transform: scale(1.05); }
+        .split-btn:disabled { background-color: #cbd5e0; border-color: #a0aec0; color: #718096; cursor: not-allowed; }
+        
+        .modal {
+            display: none;
+            font-family: 'Gaegu', cursive;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            border: 6px solid var(--pencil-gray);
+            box-shadow: 20px 20px 0 rgba(0,0,0,0.2);
+            z-index: 10;
+            width: 300px;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+        .slider-labels { display: flex; justify-content: space-between; font-weight: bold; margin: 15px 0; font-size: 1.5rem; }
+        .modal-btns button {
+            font-family: 'Gaegu', cursive; font-weight: bold; font-size: 1.2rem;
+            margin: 10px; padding: 10px 20px; cursor: pointer; border-radius: 8px; border: 3px solid var(--pencil-gray);
+        }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 15px; background: #ddd; border-radius: 10px; border: 2px solid var(--pencil-gray); }
+        input[type=range]::-webkit-slider-thumb { height: 30px; width: 30px; border-radius: 50%; background: #d9534f; -webkit-appearance: none; margin-top: -10px; border: 3px solid var(--pencil-gray); }
+
+        .active-attacker { border-color: var(--crayon-blue) !important; background-color: #e6f7ff !important; box-shadow: 5px 5px 0 var(--crayon-blue); }
+        .dead { background-color: #a0aec0 !important; border-color: #718096 !important; cursor: not-allowed; opacity: 0.5; }
+        .dead .stick { background-color: #718096; text-decoration: line-through; opacity: 0.3; }
+        
+        #action-btn {
+            font-family: 'Permanent Marker', cursive; margin-top: 40px; padding: 15px 30px; font-size: 1.5rem;
+            cursor: pointer; background-color: var(--tater-tot-gold); color: #fff; border: 4px solid var(--pencil-gray); border-radius: 15px;
+        }
+
+        .clutter { position: fixed; opacity: 0.8; pointer-events: none; }
+        .spill { width: 100px; height: 80px; background: var(--spilled-milk); border-radius: 50%; filter: blur(5px); }
+
+        /* Setup/Name Form Box Styling */
+        .setup-input {
+            width: 80%;
+            padding: 8px;
+            font-family: 'Gaegu', cursive;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border: 3px solid var(--pencil-gray);
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* Champion Winner Screen Effects */
+        .victory-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(246, 173, 85, 0.95);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: #fff;
+            text-shadow: 3px 3px 0 var(--pencil-gray);
+        }
+        .victory-screen h2 { font-family: 'Permanent Marker', cursive; font-size: 4rem; margin: 0; animation: bounce 0.6s infinite alternate; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-15px); } }
+    </style>
+</head>
+<body>
+
+    <div class="clutter spill" style="top: 60%; left: 15%;"></div>
+    <div class="clutter" style="bottom: 20%; left: 30%; font-size: 2rem;">🥔</div>
+
+    <div class="header-container">
+        <h1>Ultimate Sticks Cup</h1>
+        <button id="music-btn" onclick="toggleBackgroundMusic()">🎵 Play Music</button>
+    </div>
+
+    <div class="tournament-badge" id="level-badge">Match 1/5 vs Leo</div>
+    <br>
+    <div class="status" id="status-text">The tournament is underway! Make your move!</div>
+
+    <div class="game-board">
+        <div class="player-side" id="p1-card">
+            <h3 id="p1-name-display">Noah</h3>
+            <div class="hand-btn" id="p1L" onclick="selectHand('p1', 'L')">
+                <span class="hand-label">LEFT</span>
+                <div class="sticks-container" id="p1L-sticks"><span class="stick"></span></div>
+            </div>
+            <div class="hand-btn" id="p1R" onclick="selectHand('p1', 'R')">
+                <span class="hand-label">RIGHT</span>
+                <div class="sticks-container" id="p1R-sticks"><span class="stick"></span></div>
+            </div>
+            <button class="split-btn" id="p1-split-btn" onclick="openRearrangeModal()">🔄 Rearrange Hands</button>
+        </div>
+
+        <div class="player-side" id="comp-card">
+            <h3 id="opponent-name">Leo</h3>
+            <div class="hand-btn" id="compL" onclick="selectHand('comp', 'L')">
+                <span class="hand-label">LEFT</span>
+                <div class="sticks-container" id="compL-sticks"><span class="stick"></span></div>
+            </div>
+            <div class="hand-btn" id="compR" onclick="selectHand('comp', 'R')">
+                <span class="hand-label">RIGHT</span>
+                <div class="sticks-container" id="compR-sticks"><span class="stick"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <button id="action-btn" onclick="handleActionButton()">RESET CUP MATCH</button>
+
+    <div class="modal-overlay" id="overlay"></div>
+    <div class="modal" id="slider-modal">
+        <h3>How many sticks go to your Left hand?</h3>
+        <p>(We have <span id="modal-total-fingers">4</span> sticks total)</p>
+        <input type="range" id="finger-slider" min="0" max="4" value="2" oninput="updateSliderValues()">
+        <div class="slider-labels">
+            <span id="label-left">Left: 2</span>
+            <span id="label-right">Right: 2</span>
+        </div>
+        <div class="modal-btns">
+            <button onclick="closeModal()">NOPE</button>
+            <button style="background:#48bb78; color:white;" onclick="confirmFreestyleSplit()">DO IT</button>
+        </div>
+    </div>
+
+    <div class="modal" id="name-modal" style="display: none;">
+        <h3>Welcome to the Cup!</h3>
+        <p>What is the Challenger's Name?</p>
+        <input type="text" class="setup-input" id="name-field" value="Noah" maxlength="12">
+        <div class="modal-btns" style="margin-top:15px;">
+            <button style="background:#3182ce; color:white; width: 80%;" onclick="saveCustomName()">ENTER TOURNAMENT</button>
+        </div>
+    </div>
+
+    <div class="victory-screen" id="victory-overlay">
+        <h2>STICKS CUP CHAMPION!</h2>
+        <p style="font-size: 2rem; margin: 10px 0 30px 0;" id="victory-announcement">Noah has won the whole tournament!</p>
+        <button id="action-btn" style="margin-top:0;" onclick="closeVictoryOverlay()">PLAY AGAIN</button>
+    </div>
+
+    <script>
+        const opponents = ["Leo", "Mason", "Chloe", "Lucas", "The Champion"];
+        const maxLevels = 5;
+        
+        let playerName = "Noah";
+        let currentLevel = 1; 
+        let hands = { p1: { L: 1, R: 1 }, comp: { L: 1, R: 1 } };
+        let currentTurn = 'p1'; 
+        let selectedAttacker = null; 
+        let isMatchOver = false;
+
+        let audioCtx = null;
+        let isMusicPlaying = false;
+        let musicIntervalId = null;
+        let beatCounter = 0;
+        let fireworkIntervalId = null;
+
+        const bassNotes = [110.00, 110.00, 130.81, 146.83]; 
+        const melodyNotes = [220.00, 261.63, 293.66, 329.63, 392.00, 440.00];
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            let now = audioCtx.currentTime;
+
+            if (type === 'select') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+                gain.gain.setValueAtTime(0.08, now); gain.gain.linearRampToValueAtTime(0, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'hit') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(60, now + 0.15);
+                gain.gain.setValueAtTime(0.25, now); gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'split') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+                gain.gain.setValueAtTime(0.12, now); gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'lose') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(140, now);
+                osc.frequency.linearRampToValueAtTime(40, now + 0.6);
+                gain.gain.setValueAtTime(0.18, now); gain.gain.linearRampToValueAtTime(0, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            } else if (type === 'win') {
+                osc.type = 'square';
+                let notes = [261.63, 329.63, 392.00, 523.25];
+                gain.gain.setValueAtTime(0.12, now);
+                notes.forEach((freq, index) => { osc.frequency.setValueAtTime(freq, now + (index * 0.08)); });
+                gain.gain.linearRampToValueAtTime(0, now + 0.45);
+                osc.start(now); osc.stop(now + 0.45);
+            } else if (type === 'firework') {
+                // Procedural retro explosion sound
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100 + Math.random() * 300, now);
+                osc.frequency.exponentialRampToValueAtTime(10, now + 0.4);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            }
+        }
+
+        function toggleBackgroundMusic() {
+            initAudio();
+            let btn = document.getElementById('music-btn');
+
+            if (isMusicPlaying) {
+                clearInterval(musicIntervalId);
+                isMusicPlaying = false;
+                btn.innerText = "🎵 Play Music";
+                btn.style.background = "#9b59b6";
+            } else {
+                isMusicPlaying = true;
+                btn.innerText = "⏸ Mute Music";
+                btn.style.background = "#e74c3c";
+                
+                musicIntervalId = setInterval(() => {
+                    if (isMatchOver) return; 
+
+                    let now = audioCtx.currentTime;
+                    
+                    if (beatCounter % 2 === 0) {
+                        let bassOsc = audioCtx.createOscillator();
+                        let bassGain = audioCtx.createGain();
+                        bassOsc.connect(bassGain); bassGain.connect(audioCtx.destination);
+                        
+                        bassOsc.type = 'triangle';
+                        let currentBass = bassNotes[Math.floor(beatCounter / 4) % bassNotes.length];
+                        bassOsc.frequency.setValueAtTime(currentBass, now);
+                        
+                        bassGain.gain.setValueAtTime(0.06, now);
+                        bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                        
+                        bassOsc.start(now);
+                        bassOsc.stop(now + 0.25);
+                    }
+
+                    if (beatCounter % 4 === 0 && Math.random() < 0.65) {
+                        let melOsc = audioCtx.createOscillator();
+                        let melGain = audioCtx.createGain();
+                        melOsc.connect(melGain); melGain.connect(audioCtx.destination);
+                        
+                        melOsc.type = 'square';
+                        let randomNote = melodyNotes[Math.floor(Math.random() * melodyNotes.length)];
+                        melOsc.frequency.setValueAtTime(randomNote, now);
+                        
+                        melGain.gain.setValueAtTime(0.015, now); 
+                        melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                        
+                        melOsc.start(now);
+                        melOsc.stop(now + 0.18);
+                    }
+
+                    beatCounter = (beatCounter + 1) % 16;
+                }, 180);
+            }
+        }
+
+        // --- NEW LOCALSTORAGE AUTO-SAVE SYNC LOGIC ---
+        function saveGameState() {
+            let data = {
+                playerName,
+                currentLevel,
+                hands,
+                currentTurn,
+                isMatchOver
+            };
+            localStorage.setItem('sticks_cup_savefile', JSON.stringify(data));
+        }
+
+        function loadGameState() {
+            let file = localStorage.getItem('sticks_cup_savefile');
+            if (file) {
+                let saved = JSON.parse(file);
+                playerName = saved.playerName || "Noah";
+                currentLevel = saved.currentLevel || 1;
+                hands = saved.hands || { p1: { L: 1, R: 1 }, comp: { L: 1, R: 1 } };
+                currentTurn = saved.currentTurn || 'p1';
+                isMatchOver = saved.isMatchOver || false;
+                document.getElementById('p1-name-display').innerText = playerName;
+            } else {
+                // If it's a brand new player, open the name registration modal card
+                document.getElementById('name-modal').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+            }
+        }
+
+        function saveCustomName() {
+            let input = document.getElementById('name-field').value.trim();
+            if(input) playerName = input;
+            document.getElementById('p1-name-display').innerText = playerName;
+            document.getElementById('name-modal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+            playSound('win');
+            saveGameState();
+            updateDisplay();
+        }
+
+        function triggerChampionVictory() {
+            playSound('win');
+            document.getElementById('victory-announcement').innerText = `🏆 ${playerName.toUpperCase()} HAS DEFEATED THE CHAMPION! 🏆`;
+            document.getElementById('victory-overlay').style.display = 'flex';
+            
+            // Loop firework audio bursts programmatically
+            fireworkIntervalId = setInterval(() => {
+                playSound('firework');
+            }, 350);
+        }
+
+        function closeVictoryOverlay() {
+            clearInterval(fireworkIntervalId);
+            document.getElementById('victory-overlay').style.display = 'none';
+            currentLevel = 1;
+            resetCurrentMatch();
+        }
+
+        function updateDisplay() {
+            document.getElementById('opponent-name').innerText = opponents[currentLevel - 1];
+            document.getElementById('level-badge').innerText = `Match ${currentLevel}/${maxLevels} vs ${opponents[currentLevel - 1]}`;
+
+            let p1AliveCount = 0; let compAliveCount = 0;
+
+            for (let p of ['p1', 'comp']) {
+                for (let h of ['L', 'R']) {
+                    let btn = document.getElementById(`${p}${h}`);
+                    let sticksContainer = document.getElementById(`${p}${h}-sticks`);
+                    let value = hands[p][h];
+                    
+                    if (value >= 5 || value === 0) {
+                        btn.classList.add('dead'); hands[p][h] = 0; sticksContainer.innerHTML = ''; 
+                    } else {
+                        btn.classList.remove('dead'); sticksContainer.innerHTML = ''; 
+                        for(let i=0; i<value; i++) { sticksContainer.innerHTML += '<span class="stick"></span>'; }
+                        if (p === 'p1') p1AliveCount++;
+                        if (p === 'comp') compAliveCount++;
+                    }
+                    btn.classList.remove('active-attacker');
+                }
+            }
+
+            document.getElementById('p1-card').classList.toggle('active-turn-card', currentTurn === 'p1');
+            document.getElementById('comp-card').classList.toggle('active-turn-card', currentTurn === 'comp');
+
+            if (p1AliveCount === 0) {
+                if (!isMatchOver) playSound('lose');
+                document.getElementById('status-text').innerText = `❌ ${opponents[currentLevel - 1]} beat you! Try again!`;
+                isMatchOver = true; disableSplitButton();
+                document.getElementById('action-btn').innerText = "TRY MATCH AGAIN";
+                saveGameState();
+                return;
+            }
+            if (compAliveCount === 0) {
+                if (!isMatchOver) {
+                    if (currentLevel === maxLevels) {
+                        isMatchOver = true; 
+                        disableSplitButton();
+                        triggerChampionVictory();
+                        saveGameState();
+                        return;
+                    } else {
+                        playSound('win');
+                    }
+                }
+                document.getElementById('status-text').innerText = `🎉 You defeated ${opponents[currentLevel - 1]}!`;
+                isMatchOver = true; disableSplitButton();
+                document.getElementById('action-btn').innerText = `ADVANCE TO MATCH ${currentLevel + 1}`;
+                saveGameState();
+                return;
+            }
+
+            checkSplitAvailability();
+
+            if (currentTurn === 'p1') {
+                if (!selectedAttacker) {
+                    document.getElementById('status-text').innerText = "Your Turn! Attack or Rearrange your sticks!";
+                } else {
+                    document.getElementById('status-text').innerText = `Sticks selected! Tap ${opponents[currentLevel - 1]} to attack!`;
+                    let attackerId = `${selectedAttacker.player}${selectedAttacker.hand}`;
+                    document.getElementById(attackerId).classList.add('active-attacker');
+                }
+            } else {
+                document.getElementById('status-text').innerText = `${opponents[currentLevel - 1]} is plotting...`;
+            }
+            saveGameState();
+        }
+
+        function checkSplitAvailability() {
+            let splitBtn = document.getElementById('p1-split-btn');
+            if (currentTurn !== 'p1' || isMatchOver || selectedAttacker !== null) { splitBtn.disabled = true; return; }
+            let totalFingers = hands.p1.L + hands.p1.R;
+            splitBtn.disabled = !(totalFingers >= 2 && totalFingers <= 4);
+        }
+
+        function handleActionButton() {
+            playSound('select');
+            let btnText = document.getElementById('action-btn').innerText;
+            if (btnText.includes("ADVANCE")) { currentLevel++; resetCurrentMatch(); } 
+            else if (btnText.includes("RESTART ENTIRE")) { currentLevel = 1; resetCurrentMatch(); } 
+            else { resetCurrentMatch(); }
+        }
+
+        function resetCurrentMatch() {
+            hands = { p1: { L: 1, R: 1 }, comp: { L: 1, R: 1 } };
+            currentTurn = 'p1'; selectedAttacker = null; isMatchOver = false;
+            document.getElementById('action-btn').innerText = "RESET CUP MATCH";
+            updateDisplay();
+        }
+
+        function openRearrangeModal() {
+            playSound('select');
+            let totalFingers = hands.p1.L + hands.p1.R;
+            document.getElementById('modal-total-fingers').innerText = totalFingers;
+            let slider = document.getElementById('finger-slider');
+            slider.max = totalFingers; slider.value = hands.p1.L; 
+            document.getElementById('slider-modal').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+            updateSliderValues();
+        }
+
+        function updateSliderValues() {
+            let totalFingers = hands.p1.L + hands.p1.R;
+            let leftVal = parseInt(document.getElementById('finger-slider').value);
+            let rightVal = totalFingers - leftVal;
+            document.getElementById('label-left').innerText = `L: ${leftVal}`;
+            document.getElementById('label-right').innerText = `R: ${rightVal}`;
+        }
+
+        function closeModal() {
+            playSound('select');
+            document.getElementById('slider-modal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function confirmFreestyleSplit() {
+            let totalFingers = hands.p1.L + hands.p1.R;
+            let leftVal = parseInt(document.getElementById('finger-slider').value);
+            let rightVal = totalFingers - leftVal;
+
+            if (leftVal === hands.p1.L && rightVal === hands.p1.R) { alert("You gotta change something!"); return; }
+            if (leftVal === hands.p1.R && rightVal === hands.p1.L) { alert("Can't just swap 'em!"); return; }
+
+            hands.p1.L = leftVal; hands.p1.R = rightVal;
+            closeModal(); playSound('split');
+            currentTurn = 'comp'; updateDisplay();
+            setTimeout(computerBrain, 1200); 
+        }
+
+        function disableSplitButton() { document.getElementById('p1-split-btn').disabled = true; }
+
+        function selectHand(player, hand) {
+            if (isMatchOver || currentTurn === 'comp') return; 
+            if (hands[player][hand] === 0) return; 
+
+            if (!selectedAttacker) {
+                if (player !== 'p1') { alert(`Pick your OWN sticks first!`); return; }
+                selectedAttacker = { player, hand }; playSound('select'); updateDisplay();
+            } else {
+                if (player === 'p1') { selectedAttacker = null; updateDisplay(); return; }
+                let damage = hands[selectedAttacker.player][selectedAttacker.hand];
+                hands[player][hand] += damage; selectedAttacker = null;
+                playSound('hit'); currentTurn = 'comp'; updateDisplay();
+                setTimeout(computerBrain, 1200);
+            }
+        }
+
+        function computerBrain() {
+            if (isMatchOver) return;
+            let compTotal = hands.comp.L + hands.comp.R;
+            
+            if ((hands.comp.L === 0 || hands.comp.R === 0) && compTotal >= 2 && compTotal <= 4) {
+                if (compTotal % 2 === 0) { hands.comp.L = compTotal / 2; hands.comp.R = compTotal / 2; } 
+                else { hands.comp.L = 2; hands.comp.R = 1; }
+                playSound('split'); currentTurn = 'p1'; updateDisplay(); return; 
+            }
+
+            let intelligenceThreshold = (currentLevel - 1) * 0.1875; 
+            let isSmartMove = Math.random() < intelligenceThreshold;
+
+            let validCompHands = []; if (hands.comp.L > 0) validCompHands.push('L'); if (hands.comp.R > 0) validCompHands.push('R');
+            let validHumanHands = []; if (hands.p1.L > 0) validHumanHands.push('L'); if (hands.p1.R > 0) validHumanHands.push('R');
+
+            let chosenCompHand, chosenHumanTarget;
+
+            if (isSmartMove && validCompHands.length > 0 && validHumanHands.length > 0) {
+                let foundLethal = false;
+                for (let cHand of validCompHands) {
+                    for (let hHand of validHumanHands) {
+                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) {
+                            chosenCompHand = cHand; chosenHumanTarget = hHand; foundLethal = true; break;
+                        }
+                    }
+                    if (foundLethal) break;
+                }
+                if (!foundLethal && compTotal >= 2 && compTotal <= 4 && Math.random() < 0.4) {
+                    let validOptions = [];
+                    for (let i = 0; i <= compTotal; i++) {
+                        let lOpt = i; let rOpt = compTotal - i;
+                        if ((lOpt !== hands.comp.L || rOpt !== hands.comp.R) && (lOpt !== hands.comp.R || rOpt !== hands.comp.L)) { validOptions.push({L: lOpt, R: rOpt}); }
+                    }
+                    if (validOptions.length > 0) {
+                        let chosenLayout = validOptions[Math.floor(Math.random() * validOptions.length)];
+                        hands.comp.L = chosenLayout.L; hands.comp.R = chosenLayout.R;
+                        playSound('split'); currentTurn = 'p1'; updateDisplay(); return;
+                    }
+                }
+            }
+
+            if (!chosenCompHand || !chosenHumanTarget) {
+                chosenCompHand = validCompHands[Math.floor(Math.random() * validCompHands.length)];
+                chosenHumanTarget = validHumanHands[Math.floor(Math.random() * validHumanHands.length)];
+            }
+
+            let damage = hands.comp[chosenCompHand];
+            hands.p1[chosenHumanTarget] += damage;
+            playSound('hit'); currentTurn = 'p1'; updateDisplay();
+        }
+
+        // Initialize state on load
+        loadGameState();
+        updateDisplay();
+    </script>
+</body>
+</html>
