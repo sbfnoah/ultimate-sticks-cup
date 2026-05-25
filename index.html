@@ -72,7 +72,20 @@
             border: 3px solid var(--pencil-gray);
             box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
             transform: rotate(1deg);
-            margin: 15px 0;
+            margin: 15px 0 5px 0;
+        }
+
+        #timer-display {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.8rem;
+            color: #fff;
+            background: #2d3748;
+            padding: 4px 15px;
+            border-radius: 10px;
+            display: inline-block;
+            border: 3px solid var(--pencil-gray);
+            margin-bottom: 10px;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
         }
 
         .status {
@@ -123,7 +136,6 @@
             text-decoration: underline;
         }
 
-        /* --- 8-BIT AVATAR CSS GRAPHICS GRID ENGINE --- */
         .avatar-grid {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
@@ -280,15 +292,59 @@
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(246, 173, 85, 0.95);
+            background: rgba(246, 173, 85, 0.98);
             z-index: 100;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             color: #fff;
             text-shadow: 3px 3px 0 var(--pencil-gray);
+            padding: 20px;
         }
         .victory-screen h2 { font-family: 'Permanent Marker', cursive; font-size: 4rem; margin: 0; animation: bounce 0.6s infinite alternate; }
+        
+        /* Clean screenshot target frame */
+        .share-card {
+            background: rgba(255, 255, 255, 0.15);
+            border: 4px dashed #fff;
+            padding: 25px;
+            border-radius: 20px;
+            margin: 20px 0;
+            max-width: 500px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        .victory-time {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 3.5rem;
+            color: #fff;
+            background: #2d3748;
+            padding: 10px 30px;
+            border-radius: 15px;
+            border: 4px solid var(--pencil-gray);
+            display: inline-block;
+            margin: 15px 0;
+            text-shadow: none;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.3);
+        }
+
+        .share-sms-btn {
+            font-family: 'Permanent Marker', cursive;
+            background-color: #3182ce;
+            color: white;
+            border: 3px solid var(--pencil-gray);
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .share-sms-btn:hover { background-color: #2b6cb0; transform: scale(1.05); }
+
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-15px); } }
     </style>
 </head>
@@ -303,6 +359,8 @@
     </div>
 
     <div class="tournament-badge" id="level-badge">Match 1/5 vs Leo</div>
+    <br>
+    <div id="timer-display">00:00.00</div>
     <br>
     <div class="status" id="status-text">The tournament is underway! Make your move!</div>
 
@@ -377,9 +435,16 @@
     </div>
 
     <div class="victory-screen" id="victory-overlay">
-        <h2>STICKS CUP CHAMPION!</h2>
-        <p style="font-size: 2rem; margin: 10px 0 30px 0;" id="victory-announcement">Noah has won the whole tournament!</p>
-        <button id="action-btn" style="margin-top:0;" onclick="closeVictoryOverlay()">PLAY AGAIN</button>
+        <div class="share-card">
+            <h2>STICKS CUP CHAMPION!</h2>
+            <p style="font-size: 2rem; margin: 10px 0 10px 0;" id="victory-announcement">Noah won the tournament!</p>
+            <p style="font-size: 1.3rem; margin: 0; opacity: 0.9;">🏆 OFFICIAL SPEEDRUN TIME 🏆</p>
+            <div class="victory-time" id="victory-time-display">00:00.00</div>
+            <p style="font-size: 1.1rem; margin: 0 0 10px 0; font-style: italic;">Take a screenshot to flex your record!</p>
+        </div>
+        
+        <a href="#" class="share-sms-btn" id="sms-share-link">Text Your Time 📱</a>
+        <button id="action-btn" style="margin-top:20px; background:#4a4a4a;" onclick="closeVictoryOverlay()">PLAY AGAIN</button>
     </div>
 
     <script>
@@ -396,6 +461,11 @@
 
         let playerName = "Noah";
         let selectedPlayerAvatarIndex = 0;
+
+        // Timer State Variables
+        let timerIntervalId = null;
+        let startTime = null;
+        let finalFormattedTime = "00:00.00";
 
         const avatarPresets = [
             { primary: '#3182ce', secondary: '#000000', map: [0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 0,1,1,1,1,1,1,0, 0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 1,0,1,1,1,1,0,1, 1,0,1,0,0,1,0,1, 0,0,1,0,0,1,0,0] },
@@ -508,8 +578,33 @@
                 opponentAvatars.push(avatarPresets[Math.floor(Math.random() * avatarPresets.length)]);
             }
             opponents.push("The Champion");
-            opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ecc94b', map: avatarPresets[0].map };
+            let opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ecc94b', map: avatarPresets[0].map };
             opponentAvatars.push(opponentsAvatarsChamp);
+        }
+
+        function startGlobalTimer() {
+            if(timerIntervalId) clearInterval(timerIntervalId);
+            startTime = Date.now();
+            timerIntervalId = setInterval(updateTimerUI, 30);
+        }
+
+        function stopGlobalTimer() {
+            clearInterval(timerIntervalId);
+        }
+
+        function updateTimerUI() {
+            if(!startTime) return;
+            let elapsed = Date.now() - startTime;
+            let minutes = Math.floor(elapsed / 60000);
+            let seconds = Math.floor((elapsed % 60000) / 1000);
+            let centiseconds = Math.floor((elapsed % 1000) / 10);
+
+            let mStr = minutes.toString().padStart(2, '0');
+            let sStr = seconds.toString().padStart(2, '0');
+            let cStr = centiseconds.toString().padStart(2, '0');
+
+            finalFormattedTime = `${mStr}:${sStr}.${cStr}`;
+            document.getElementById('timer-display').innerText = finalFormattedTime;
         }
 
         function runFreshSetup() {
@@ -519,6 +614,7 @@
             }
             document.getElementById('name-modal').style.display = 'block';
             document.getElementById('overlay').style.display = 'block';
+            document.getElementById('timer-display').innerText = "00:00.00";
         }
 
         function chooseAvatarPreset(idx) {
@@ -531,7 +627,6 @@
 
         function saveCustomName() {
             let input = document.getElementById('name-field').value.trim();
-            // FIXED: If input is empty, read the placeholder value "Noah" as fallback tracking
             playerName = input ? input : "Noah";
             
             document.getElementById('p1-name-display').innerText = playerName;
@@ -541,11 +636,22 @@
             
             renderAvatar('p1-avatar-display', avatarPresets[selectedPlayerAvatarIndex]);
             updateDisplay();
+            
+            // Start the time tracking immediately as gameplay begins
+            startGlobalTimer();
         }
 
         function triggerChampionVictory() {
+            stopGlobalTimer();
             playSound('win');
-            document.getElementById('victory-announcement').innerText = `🏆 ${playerName.toUpperCase()} HAS DEFEATED ${opponents[currentLevel-1].toUpperCase()}! 🏆`;
+            
+            document.getElementById('victory-announcement').innerText = `🏆 ${playerName.toUpperCase()} WON THE TOURNAMENT! 🏆`;
+            document.getElementById('victory-time-display').innerText = finalFormattedTime;
+            
+            // Build text sharing system configuration link
+            let textMessage = `I just won the Ultimate Sticks Cup in ${finalFormattedTime}! Think you can beat my best run time? 🎮🔥`;
+            document.getElementById('sms-share-link').href = `sms:?&body=${encodeURIComponent(textMessage)}`;
+            
             document.getElementById('victory-overlay').style.display = 'flex';
             fireworkIntervalId = setInterval(() => { playSound('firework'); }, 350);
         }
@@ -556,6 +662,7 @@
             currentLevel = 1;
             generateRandomOpponents();
             resetCurrentMatch();
+            startGlobalTimer();
         }
 
         function updateDisplay() {
@@ -634,7 +741,7 @@
             playSound('select');
             let btnText = document.getElementById('action-btn').innerText;
             if (btnText.includes("ADVANCE")) { currentLevel++; resetCurrentMatch(); } 
-            else if (btnText.includes("RESTART ENTIRE")) { currentLevel = 1; generateRandomOpponents(); resetCurrentMatch(); } 
+            else if (btnText.includes("RESTART ENTIRE")) { currentLevel = 1; generateRandomOpponents(); resetCurrentMatch(); startGlobalTimer(); } 
             else { resetCurrentMatch(); }
         }
 
@@ -688,7 +795,7 @@
             hands.p1.L = leftVal; hands.p1.R = rightVal;
             closeModal(); playSound('split');
             currentTurn = 'comp'; updateDisplay();
-            setTimeout(computerBrain, 1200); 
+            setTimeout(computerBrain, 1000); 
         }
 
         function disableSplitButton() { document.getElementById('p1-split-btn').disabled = true; }
@@ -705,37 +812,40 @@
                 let damage = hands[selectedAttacker.player][selectedAttacker.hand];
                 hands[player][hand] += damage; selectedAttacker = null;
                 playSound('hit'); currentTurn = 'comp'; updateDisplay();
-                setTimeout(computerBrain, 1200);
+                setTimeout(computerBrain, 1000);
             }
         }
 
+        /* --- UPGRADED, SMART AI BRAIN ENGINE --- */
         function computerBrain() {
             if (isMatchOver) return;
-            let compTotal = hands.comp.L + hands.comp.R;
             
-            if ((hands.comp.L === 0 || hands.comp.R === 0) && compTotal >= 2 && compTotal <= 4) {
+            let compTotal = hands.comp.L + hands.comp.R;
+            let validCompHands = []; if (hands.comp.L > 0) validCompHands.push('L'); if (hands.comp.R > 0) validCompHands.push('R');
+            let validHumanHands = []; if (hands.p1.L > 0) validHumanHands.push('L'); if (hands.p1.R > 0) validHumanHands.push('R');
+
+            // --- STRATEGY 1: INSTANT KILL DETECTION (ALL LEVELS) ---
+            if (validCompHands.length > 0 && validHumanHands.length > 0) {
+                for (let cHand of validCompHands) {
+                    for (let hHand of validHumanHands) {
+                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) {
+                            hands.p1[hHand] += hands.comp[cHand];
+                            playSound('hit'); currentTurn = 'p1'; updateDisplay(); return;
+                        }
+                    }
+                }
+            }
+
+            // --- STRATEGY 2: REARRANGE/SPLIT DEFENSE ENGINE (LEVEL 2+) ---
+            if (currentLevel >= 2 && (hands.comp.L === 0 || hands.comp.R === 0) && compTotal >= 2 && compTotal <= 4) {
                 if (compTotal === 4) { hands.comp.L = 2; hands.comp.R = 2; } 
                 else if (compTotal === 2) { hands.comp.L = 1; hands.comp.R = 1; } 
                 else { hands.comp.L = 2; hands.comp.R = 1; }
                 playSound('split'); currentTurn = 'p1'; updateDisplay(); return; 
             }
 
-            let validCompHands = []; if (hands.comp.L > 0) validCompHands.push('L'); if (hands.comp.R > 0) validCompHands.push('R');
-            let validHumanHands = []; if (hands.p1.L > 0) validHumanHands.push('L'); if (hands.p1.R > 0) validHumanHands.push('R');
-
-            let chosenCompHand, chosenHumanTarget;
-
-            if (currentLevel >= 4 && validCompHands.length > 0 && validHumanHands.length > 0) {
-                for (let cHand of validCompHands) {
-                    for (let hHand of validHumanHands) {
-                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) {
-                            chosenCompHand = cHand; chosenHumanTarget = hHand;
-                            hands.p1[chosenHumanTarget] += hands.comp[chosenCompHand];
-                            playSound('hit'); currentTurn = 'p1'; updateDisplay(); return;
-                        }
-                    }
-                }
-
+            // --- STRATEGY 3: ACTIVE PRE-EMPTIVE RISK DODGING (LEVEL 3+) ---
+            if (currentLevel >= 3 && validCompHands.length > 0) {
                 let threatDetected = false;
                 for (let hHand of validHumanHands) {
                     for (let cHand of validCompHands) {
@@ -743,45 +853,40 @@
                     }
                 }
                 
-                if (threatDetected && compTotal >= 2 && compTotal <= 4 && Math.random() < 0.70) {
-                    let shuffles = [];
+                if (threatDetected && compTotal >= 2 && compTotal <= 4 && Math.random() < 0.85) {
+                    let strategicShuffles = [];
                     for (let i = 0; i <= compTotal; i++) {
-                        if (i !== 5 && (compTotal - i) !== 5 && i !== hands.comp.L && i !== hands.comp.R) { shuffles.push({L: i, R: compTotal - i}); }
+                        let potentialRight = compTotal - i;
+                        if (i < 5 && potentialRight < 5 && i !== hands.comp.L && i !== hands.comp.R) { 
+                            strategicShuffles.push({L: i, R: potentialRight}); 
+                        }
                     }
-                    if (shuffles.length > 0) {
-                        let pick = shuffles[Math.floor(Math.random() * shuffles.length)];
+                    if (strategicShuffles.length > 0) {
+                        let pick = strategicShuffles[Math.floor(Math.random() * strategicShuffles.length)];
                         hands.comp.L = pick.L; hands.comp.R = pick.R;
                         playSound('split'); currentTurn = 'p1'; updateDisplay(); return;
                     }
                 }
-
-                if (validHumanHands.length === 2) {
-                    chosenHumanTarget = hands.p1.L >= hands.p1.R ? 'L' : 'R';
-                    chosenCompHand = validCompHands[Math.floor(Math.random() * validCompHands.length)];
-                    hands.p1[chosenHumanTarget] += hands.comp[chosenCompHand];
-                    playSound('hit'); currentTurn = 'p1'; updateDisplay(); return;
-                }
             }
 
-            let intelligenceThreshold = (currentLevel - 1) * 0.1875; 
-            let isSmartMove = Math.random() < intelligenceThreshold;
-
-            if (isSmartMove && validCompHands.length > 0 && validHumanHands.length > 0) {
+            // --- STRATEGY 4: AGGRESSIVE WEAK HAND targeting (LEVEL 4+) ---
+            if (currentLevel >= 4 && validHumanHands.length === 2) {
+                let targetHand = hands.p1.L >= hands.p1.R ? 'L' : 'R';
+                let bestCompAttacker = validCompHands[0];
                 for (let cHand of validCompHands) {
-                    for (let hHand of validHumanHands) {
-                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) { chosenCompHand = cHand; chosenHumanTarget = hHand; break; }
-                    }
-                    if (chosenCompHand) break;
+                    if (hands.comp[cHand] > hands.comp[bestCompAttacker]) bestCompAttacker = cHand;
                 }
+                hands.p1[targetHand] += hands.comp[bestCompAttacker];
+                playSound('hit'); currentTurn = 'p1'; updateDisplay(); return;
             }
 
-            if (!chosenCompHand || !chosenHumanTarget) {
-                chosenCompHand = validCompHands[Math.floor(Math.random() * validCompHands.length)];
-                chosenHumanTarget = validHumanHands[Math.floor(Math.random() * validHumanHands.length)];
+            // --- FALLBACK RANDOM MOVEMENT SYSTEM ---
+            if (validCompHands.length > 0 && validHumanHands.length > 0) {
+                let chosenCompHand = validCompHands[Math.floor(Math.random() * validCompHands.length)];
+                let chosenHumanTarget = validHumanHands[Math.floor(Math.random() * validHumanHands.length)];
+                hands.p1[chosenHumanTarget] += hands.comp[chosenCompHand];
+                playSound('hit'); currentTurn = 'p1'; updateDisplay();
             }
-
-            hands.p1[chosenHumanTarget] += hands.comp[chosenCompHand];
-            playSound('hit'); currentTurn = 'p1'; updateDisplay();
         }
 
         runFreshSetup();
