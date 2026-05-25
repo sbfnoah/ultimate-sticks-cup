@@ -137,6 +137,7 @@
         .stick:nth-child(even) { transform: rotate(-5deg); }
         .stick:nth-child(3) { transform: rotate(8deg); }
         .stick:nth-child(4) { transform: rotate(-8deg); }
+        .stick:nth-child(5) { transform: rotate(12deg); } /* Support 5th stick layout */
 
         .hand-btn {
             display: flex;
@@ -233,7 +234,6 @@
         .clutter { position: fixed; opacity: 0.8; pointer-events: none; }
         .spill { width: 100px; height: 80px; background: var(--spilled-milk); border-radius: 50%; filter: blur(5px); }
 
-        /* Setup/Name Form Box Styling */
         .setup-input {
             width: 80%;
             padding: 8px;
@@ -246,7 +246,6 @@
             margin-top: 10px;
         }
 
-        /* Champion Winner Screen Effects */
         .victory-screen {
             display: none;
             position: fixed;
@@ -398,7 +397,6 @@
                 gain.gain.linearRampToValueAtTime(0, now + 0.45);
                 osc.start(now); osc.stop(now + 0.45);
             } else if (type === 'firework') {
-                // Procedural retro explosion sound
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(100 + Math.random() * 300, now);
                 osc.frequency.exponentialRampToValueAtTime(10, now + 0.4);
@@ -464,7 +462,6 @@
             }
         }
 
-        // --- NEW LOCALSTORAGE AUTO-SAVE SYNC LOGIC ---
         function saveGameState() {
             let data = {
                 playerName,
@@ -487,7 +484,6 @@
                 isMatchOver = saved.isMatchOver || false;
                 document.getElementById('p1-name-display').innerText = playerName;
             } else {
-                // If it's a brand new player, open the name registration modal card
                 document.getElementById('name-modal').style.display = 'block';
                 document.getElementById('overlay').style.display = 'block';
             }
@@ -509,7 +505,6 @@
             document.getElementById('victory-announcement').innerText = `🏆 ${playerName.toUpperCase()} HAS DEFEATED THE CHAMPION! 🏆`;
             document.getElementById('victory-overlay').style.display = 'flex';
             
-            // Loop firework audio bursts programmatically
             fireworkIntervalId = setInterval(() => {
                 playSound('firework');
             }, 350);
@@ -534,7 +529,8 @@
                     let sticksContainer = document.getElementById(`${p}${h}-sticks`);
                     let value = hands[p][h];
                     
-                    if (value >= 5 || value === 0) {
+                    // NEW HOUSE RULE CORE LOGIC: Hands only die if an attack forces them to 6 or higher.
+                    if (value >= 6 || value === 0) {
                         btn.classList.add('dead'); hands[p][h] = 0; sticksContainer.innerHTML = ''; 
                     } else {
                         btn.classList.remove('dead'); sticksContainer.innerHTML = ''; 
@@ -596,7 +592,10 @@
             let splitBtn = document.getElementById('p1-split-btn');
             if (currentTurn !== 'p1' || isMatchOver || selectedAttacker !== null) { splitBtn.disabled = true; return; }
             let totalFingers = hands.p1.L + hands.p1.R;
-            splitBtn.disabled = !(totalFingers >= 2 && totalFingers <= 4);
+            
+            // NEW HOUSE RULE SAFETY CHECK: 
+            // Total finger count unlock limit pushed to 5!
+            splitBtn.disabled = !(totalFingers >= 2 && totalFingers <= 5);
         }
 
         function handleActionButton() {
@@ -675,9 +674,17 @@
             if (isMatchOver) return;
             let compTotal = hands.comp.L + hands.comp.R;
             
-            if ((hands.comp.L === 0 || hands.comp.R === 0) && compTotal >= 2 && compTotal <= 4) {
-                if (compTotal % 2 === 0) { hands.comp.L = compTotal / 2; hands.comp.R = compTotal / 2; } 
-                else { hands.comp.L = 2; hands.comp.R = 1; }
+            // Computer Auto-Split Rule scaling protection adjustment
+            if ((hands.comp.L === 0 || hands.comp.R === 0) && compTotal >= 2 && compTotal <= 5) {
+                if (compTotal === 4) {
+                    hands.comp.L = 2; hands.comp.R = 2;
+                } else if (compTotal === 2) {
+                    hands.comp.L = 1; hands.comp.R = 1;
+                } else if (compTotal === 5) {
+                    hands.comp.L = 3; hands.comp.R = 2;
+                } else {
+                    hands.comp.L = 2; hands.comp.R = 1;
+                }
                 playSound('split'); currentTurn = 'p1'; updateDisplay(); return; 
             }
 
@@ -693,17 +700,20 @@
                 let foundLethal = false;
                 for (let cHand of validCompHands) {
                     for (let hHand of validHumanHands) {
-                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) {
+                        // Lethal attacks trigger on 6 or higher now!
+                        if (hands.comp[cHand] + hands.p1[hHand] >= 6) {
                             chosenCompHand = cHand; chosenHumanTarget = hHand; foundLethal = true; break;
                         }
                     }
                     if (foundLethal) break;
                 }
-                if (!foundLethal && compTotal >= 2 && compTotal <= 4 && Math.random() < 0.4) {
+                if (!foundLethal && compTotal >= 2 && compTotal <= 5 && Math.random() < 0.4) {
                     let validOptions = [];
                     for (let i = 0; i <= compTotal; i++) {
                         let lOpt = i; let rOpt = compTotal - i;
-                        if ((lOpt !== hands.comp.L || rOpt !== hands.comp.R) && (lOpt !== hands.comp.R || rOpt !== hands.comp.L)) { validOptions.push({L: lOpt, R: rOpt}); }
+                        if ((lOpt !== hands.comp.L || rOpt !== hands.comp.R) && (lOpt !== hands.comp.R || rOpt !== hands.comp.L)) {
+                            validOptions.push({L: lOpt, R: rOpt});
+                        }
                     }
                     if (validOptions.length > 0) {
                         let chosenLayout = validOptions[Math.floor(Math.random() * validOptions.length)];
@@ -723,7 +733,6 @@
             playSound('hit'); currentTurn = 'p1'; updateDisplay();
         }
 
-        // Initialize state on load
         loadGameState();
         updateDisplay();
     </script>
