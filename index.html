@@ -137,7 +137,6 @@
         .stick:nth-child(even) { transform: rotate(-5deg); }
         .stick:nth-child(3) { transform: rotate(8deg); }
         .stick:nth-child(4) { transform: rotate(-8deg); }
-        .stick:nth-child(5) { transform: rotate(12deg); } /* Support 5th stick layout */
 
         .hand-btn {
             display: flex;
@@ -463,13 +462,7 @@
         }
 
         function saveGameState() {
-            let data = {
-                playerName,
-                currentLevel,
-                hands,
-                currentTurn,
-                isMatchOver
-            };
+            let data = { playerName, currentLevel, hands, currentTurn, isMatchOver };
             localStorage.setItem('sticks_cup_savefile', JSON.stringify(data));
         }
 
@@ -529,8 +522,7 @@
                     let sticksContainer = document.getElementById(`${p}${h}-sticks`);
                     let value = hands[p][h];
                     
-                    // NEW HOUSE RULE CORE LOGIC: Hands only die if an attack forces them to 6 or higher.
-                    if (value >= 6 || value === 0) {
+                    if (value >= 5 || value === 0) {
                         btn.classList.add('dead'); hands[p][h] = 0; sticksContainer.innerHTML = ''; 
                     } else {
                         btn.classList.remove('dead'); sticksContainer.innerHTML = ''; 
@@ -592,9 +584,6 @@
             let splitBtn = document.getElementById('p1-split-btn');
             if (currentTurn !== 'p1' || isMatchOver || selectedAttacker !== null) { splitBtn.disabled = true; return; }
             let totalFingers = hands.p1.L + hands.p1.R;
-            
-            // NEW HOUSE RULE SAFETY CHECK: 
-            // Total finger count unlock limit pushed to 5!
             splitBtn.disabled = !(totalFingers >= 2 && totalFingers <= 5);
         }
 
@@ -646,6 +635,11 @@
             if (leftVal === hands.p1.L && rightVal === hands.p1.R) { alert("You gotta change something!"); return; }
             if (leftVal === hands.p1.R && rightVal === hands.p1.L) { alert("Can't just swap 'em!"); return; }
 
+            if (leftVal === 5 || rightVal === 5) {
+                alert("Nice try, but you can't split into 5! That would instantly eliminate your own hand.");
+                return;
+            }
+
             hands.p1.L = leftVal; hands.p1.R = rightVal;
             closeModal(); playSound('split');
             currentTurn = 'comp'; updateDisplay();
@@ -670,59 +664,84 @@
             }
         }
 
+        // --- UPGRADED MASTER TOURNAMENT AI BRAIN ---
         function computerBrain() {
             if (isMatchOver) return;
             let compTotal = hands.comp.L + hands.comp.R;
             
-            // Computer Auto-Split Rule scaling protection adjustment
-            if ((hands.comp.L === 0 || hands.comp.R === 0) && compTotal >= 2 && compTotal <= 5) {
-                if (compTotal === 4) {
-                    hands.comp.L = 2; hands.comp.R = 2;
-                } else if (compTotal === 2) {
-                    hands.comp.L = 1; hands.comp.R = 1;
-                } else if (compTotal === 5) {
-                    hands.comp.L = 3; hands.comp.R = 2;
-                } else {
-                    hands.comp.L = 2; hands.comp.R = 1;
-                }
+            // 1. Core Panic Save: Revive dead hand automatically
+            if ((hands.comp.L === 0 || hands.comp.R === 0) && compTotal >= 2 && compTotal <= 4) {
+                if (compTotal === 4) { hands.comp.L = 2; hands.comp.R = 2; } 
+                else if (compTotal === 2) { hands.comp.L = 1; hands.comp.R = 1; } 
+                else { hands.comp.L = 2; hands.comp.R = 1; }
                 playSound('split'); currentTurn = 'p1'; updateDisplay(); return; 
             }
-
-            let intelligenceThreshold = (currentLevel - 1) * 0.1875; 
-            let isSmartMove = Math.random() < intelligenceThreshold;
 
             let validCompHands = []; if (hands.comp.L > 0) validCompHands.push('L'); if (hands.comp.R > 0) validCompHands.push('R');
             let validHumanHands = []; if (hands.p1.L > 0) validHumanHands.push('L'); if (hands.p1.R > 0) validHumanHands.push('R');
 
             let chosenCompHand, chosenHumanTarget;
 
-            if (isSmartMove && validCompHands.length > 0 && validHumanHands.length > 0) {
-                let foundLethal = false;
+            // 2. HARDCORE ENDGAME DIFFICULTY TUNING (Matches 4 and 5)
+            if (currentLevel >= 4 && validCompHands.length > 0 && validHumanHands.length > 0) {
+                // TACTIC A: Lock-on kill check. If it can eliminate you right now, it WILL do it.
                 for (let cHand of validCompHands) {
                     for (let hHand of validHumanHands) {
-                        // Lethal attacks trigger on 6 or higher now!
-                        if (hands.comp[cHand] + hands.p1[hHand] >= 6) {
-                            chosenCompHand = cHand; chosenHumanTarget = hHand; foundLethal = true; break;
+                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) {
+                            chosenCompHand = cHand; chosenHumanTarget = hHand;
+                            hands.p1[chosenHumanTarget] += hands.comp[chosenCompHand];
+                            playSound('hit'); currentTurn = 'p1'; updateDisplay(); return;
                         }
                     }
-                    if (foundLethal) break;
                 }
-                if (!foundLethal && compTotal >= 2 && compTotal <= 5 && Math.random() < 0.4) {
-                    let validOptions = [];
+
+                // TACTIC B: Self-Preservation Matrix. If you have a hand strong enough to kill an AI hand on your next turn, 
+                // the AI will attempt a tactical shuffle to disrupt your math.
+                let threatDetected = false;
+                for (let hHand of validHumanHands) {
+                    for (let cHand of validCompHands) {
+                        if (hands.p1[hHand] + hands.comp[cHand] >= 5) threatDetected = true;
+                    }
+                }
+                if (threatDetected && compTotal >= 2 && compTotal <= 4 && Math.random() < 0.70) {
+                    let shuffles = [];
                     for (let i = 0; i <= compTotal; i++) {
-                        let lOpt = i; let rOpt = compTotal - i;
-                        if ((lOpt !== hands.comp.L || rOpt !== hands.comp.R) && (lOpt !== hands.comp.R || rOpt !== hands.comp.L)) {
-                            validOptions.push({L: lOpt, R: rOpt});
+                        if (i !== 5 && (compTotal - i) !== 5 && i !== hands.comp.L && i !== hands.comp.R) {
+                            shuffles.push({L: i, R: compTotal - i});
                         }
                     }
-                    if (validOptions.length > 0) {
-                        let chosenLayout = validOptions[Math.floor(Math.random() * validOptions.length)];
-                        hands.comp.L = chosenLayout.L; hands.comp.R = chosenLayout.R;
+                    if (shuffles.length > 0) {
+                        let pick = shuffles[Math.floor(Math.random() * shuffles.length)];
+                        hands.comp.L = pick.L; hands.comp.R = pick.R;
                         playSound('split'); currentTurn = 'p1'; updateDisplay(); return;
                     }
                 }
+
+                // TACTIC C: Aggressive target calculation. Focus fire on your strongest hand.
+                if (validHumanHands.length === 2) {
+                    chosenHumanTarget = hands.p1.L >= hands.p1.R ? 'L' : 'R';
+                    chosenCompHand = validCompHands[Math.floor(Math.random() * validCompHands.length)];
+                    hands.p1[chosenHumanTarget] += hands.comp[chosenCompHand];
+                    playSound('hit'); currentTurn = 'p1'; updateDisplay(); return;
+                }
             }
 
+            // 3. MID-LEVEL AI SCALING FALLBACK (Matches 1-3)
+            let intelligenceThreshold = (currentLevel - 1) * 0.1875; 
+            let isSmartMove = Math.random() < intelligenceThreshold;
+
+            if (isSmartMove && validCompHands.length > 0 && validHumanHands.length > 0) {
+                for (let cHand of validCompHands) {
+                    for (let hHand of validHumanHands) {
+                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) {
+                            chosenCompHand = cHand; chosenHumanTarget = hHand; break;
+                        }
+                    }
+                    if (chosenCompHand) break;
+                }
+            }
+
+            // 4. TOTALLY RANDOM MOVEMENT FALLBACK
             if (!chosenCompHand || !chosenHumanTarget) {
                 chosenCompHand = validCompHands[Math.floor(Math.random() * validCompHands.length)];
                 chosenHumanTarget = validHumanHands[Math.floor(Math.random() * validHumanHands.length)];
