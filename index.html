@@ -303,7 +303,6 @@
         }
         .victory-screen h2 { font-family: 'Permanent Marker', cursive; font-size: 4rem; margin: 0; animation: bounce 0.6s infinite alternate; }
         
-        /* Clean screenshot target frame */
         .share-card {
             background: rgba(255, 255, 255, 0.15);
             border: 4px dashed #fff;
@@ -462,7 +461,6 @@
         let playerName = "Noah";
         let selectedPlayerAvatarIndex = 0;
 
-        // Timer State Variables
         let timerIntervalId = null;
         let startTime = null;
         let finalFormattedTime = "00:00.00";
@@ -636,8 +634,6 @@
             
             renderAvatar('p1-avatar-display', avatarPresets[selectedPlayerAvatarIndex]);
             updateDisplay();
-            
-            // Start the time tracking immediately as gameplay begins
             startGlobalTimer();
         }
 
@@ -648,8 +644,7 @@
             document.getElementById('victory-announcement').innerText = `🏆 ${playerName.toUpperCase()} WON THE TOURNAMENT! 🏆`;
             document.getElementById('victory-time-display').innerText = finalFormattedTime;
             
-            // Build text sharing system configuration link
-            let textMessage = `I just won the Ultimate Sticks Cup in ${finalFormattedTime}! Think you can beat my best run time? 🎮🔥`;
+            let textMessage = `I just beat the Ultimate Sticks Cup in ${finalFormattedTime}! Bet you can't top that! 🎮🔥`;
             document.getElementById('sms-share-link').href = `sms:?&body=${encodeURIComponent(textMessage)}`;
             
             document.getElementById('victory-overlay').style.display = 'flex';
@@ -726,7 +721,7 @@
                     document.getElementById(attackerId).classList.add('active-attacker');
                 }
             } else {
-                document.getElementById('status-text').innerText = `${opponents[currentLevel - 1]} is plotting...`;
+                document.getElementById('status-text').innerText = `${opponents[currentLevel - 1]} is calculating...`;
             }
         }
 
@@ -795,7 +790,7 @@
             hands.p1.L = leftVal; hands.p1.R = rightVal;
             closeModal(); playSound('split');
             currentTurn = 'comp'; updateDisplay();
-            setTimeout(computerBrain, 1000); 
+            setTimeout(computerBrain, 800); 
         }
 
         function disableSplitButton() { document.getElementById('p1-split-btn').disabled = true; }
@@ -812,81 +807,182 @@
                 let damage = hands[selectedAttacker.player][selectedAttacker.hand];
                 hands[player][hand] += damage; selectedAttacker = null;
                 playSound('hit'); currentTurn = 'comp'; updateDisplay();
-                setTimeout(computerBrain, 1000);
+                setTimeout(computerBrain, 800);
             }
         }
 
-        /* --- UPGRADED, SMART AI BRAIN ENGINE --- */
+        /* --- ULTRA HARD MINIMAX ARTIFICIAL INTELLIGENCE ---
+           Simulates all future branching possibilities to find the mathematically ideal choice.
+        */
         function computerBrain() {
             if (isMatchOver) return;
+
+            // Generate all valid moves from the current state
+            let moves = getValidMoves(hands, 'comp');
             
-            let compTotal = hands.comp.L + hands.comp.R;
-            let validCompHands = []; if (hands.comp.L > 0) validCompHands.push('L'); if (hands.comp.R > 0) validCompHands.push('R');
-            let validHumanHands = []; if (hands.p1.L > 0) validHumanHands.push('L'); if (hands.p1.R > 0) validHumanHands.push('R');
+            let bestScore = -Infinity;
+            let selectedMove = null;
+            
+            // Adjust calculations depth scaling cleanly based on current bracket progression
+            let depthLimit = currentLevel + 1; // Match 1 = Depth 2, Match 5 = Depth 6
 
-            // --- STRATEGY 1: INSTANT KILL DETECTION (ALL LEVELS) ---
-            if (validCompHands.length > 0 && validHumanHands.length > 0) {
-                for (let cHand of validCompHands) {
-                    for (let hHand of validHumanHands) {
-                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) {
-                            hands.p1[hHand] += hands.comp[cHand];
-                            playSound('hit'); currentTurn = 'p1'; updateDisplay(); return;
-                        }
-                    }
-                }
-            }
-
-            // --- STRATEGY 2: REARRANGE/SPLIT DEFENSE ENGINE (LEVEL 2+) ---
-            if (currentLevel >= 2 && (hands.comp.L === 0 || hands.comp.R === 0) && compTotal >= 2 && compTotal <= 4) {
-                if (compTotal === 4) { hands.comp.L = 2; hands.comp.R = 2; } 
-                else if (compTotal === 2) { hands.comp.L = 1; hands.comp.R = 1; } 
-                else { hands.comp.L = 2; hands.comp.R = 1; }
-                playSound('split'); currentTurn = 'p1'; updateDisplay(); return; 
-            }
-
-            // --- STRATEGY 3: ACTIVE PRE-EMPTIVE RISK DODGING (LEVEL 3+) ---
-            if (currentLevel >= 3 && validCompHands.length > 0) {
-                let threatDetected = false;
-                for (let hHand of validHumanHands) {
-                    for (let cHand of validCompHands) {
-                        if (hands.p1[hHand] + hands.comp[cHand] >= 5) threatDetected = true;
-                    }
-                }
+            for (let move of moves) {
+                let stateCopy = cloneState(hands);
+                applyMove(stateCopy, move, 'comp');
                 
-                if (threatDetected && compTotal >= 2 && compTotal <= 4 && Math.random() < 0.85) {
-                    let strategicShuffles = [];
-                    for (let i = 0; i <= compTotal; i++) {
-                        let potentialRight = compTotal - i;
-                        if (i < 5 && potentialRight < 5 && i !== hands.comp.L && i !== hands.comp.R) { 
-                            strategicShuffles.push({L: i, R: potentialRight}); 
+                // Evaluate move using Minimax algorithm
+                let score = minimax(stateCopy, depthLimit, false, -Infinity, Infinity);
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    selectedMove = move;
+                }
+            }
+
+            // Fallback emergency safety guard check
+            if (!selectedMove && moves.length > 0) {
+                selectedMove = moves[0];
+            }
+
+            // Execute calculated ideal move choice safely
+            if (selectedMove) {
+                if (selectedMove.type === 'split') {
+                    hands.comp.L = selectedMove.L;
+                    hands.comp.R = selectedMove.R;
+                    playSound('split');
+                } else {
+                    hands.p1[selectedMove.target] += hands.comp[selectedMove.attacker];
+                    playSound('hit');
+                }
+            }
+
+            currentTurn = 'p1';
+            updateDisplay();
+        }
+
+        function minimax(state, depth, isMaxPlayer, alpha, beta) {
+            let gameOverCheck = checkGameState(state);
+            if (gameOverCheck === 'comp_win') return 1000 + depth;
+            if (gameOverCheck === 'p1_win') return -1000 - depth;
+            if (depth === 0) return evaluateState(state);
+
+            if (isMaxPlayer) {
+                let maxEval = -Infinity;
+                let moves = getValidMoves(state, 'comp');
+                if (moves.length === 0) return evaluateState(state);
+                for (let move of moves) {
+                    let nextState = cloneState(state);
+                    applyMove(nextState, move, 'comp');
+                    let evalScore = minimax(nextState, depth - 1, false, alpha, beta);
+                    maxEval = Math.max(maxEval, evalScore);
+                    alpha = Math.max(alpha, evalScore);
+                    if (beta <= alpha) break;
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                let moves = getValidMoves(state, 'p1');
+                if (moves.length === 0) return evaluateState(state);
+                for (let move of moves) {
+                    let nextState = cloneState(state);
+                    applyMove(nextState, move, 'p1');
+                    let evalScore = minimax(nextState, depth - 1, true, alpha, beta);
+                    minEval = Math.min(minEval, evalScore);
+                    beta = Math.min(beta, evalScore);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
+            }
+        }
+
+        function getValidMoves(state, player) {
+            let moves = [];
+            let opponent = (player === 'comp') ? 'p1' : 'comp';
+            
+            let pL = state[player].L;
+            let pR = state[player].R;
+
+            // Attack options
+            if (pL > 0) {
+                if (state[opponent].L > 0) moves.push({ type: 'attack', attacker: 'L', target: 'L' });
+                if (state[opponent].R > 0) moves.push({ type: 'attack', attacker: 'L', target: 'R' });
+            }
+            if (pR > 0) {
+                if (state[opponent].L > 0) moves.push({ type: 'attack', attacker: 'R', target: 'L' });
+                if (state[opponent].R > 0) moves.push({ type: 'attack', attacker: 'R', target: 'R' });
+            }
+
+            // Splitting / Rearranging options
+            let totalSticks = pL + pR;
+            if (totalSticks >= 2 && totalSticks <= 5) {
+                let minSticks = (totalSticks === 5) ? 1 : 0;
+                let maxSticks = (totalSticks === 5) ? 4 : totalSticks;
+                
+                for (let i = minSticks; i <= maxSticks; i++) {
+                    let j = totalSticks - i;
+                    if (i < 5 && j < 5) {
+                        // Prevent identical state or plain side swaps
+                        if (i !== pL && i !== pR) {
+                            moves.push({ type: 'split', L: i, R: j });
                         }
                     }
-                    if (strategicShuffles.length > 0) {
-                        let pick = strategicShuffles[Math.floor(Math.random() * strategicShuffles.length)];
-                        hands.comp.L = pick.L; hands.comp.R = pick.R;
-                        playSound('split'); currentTurn = 'p1'; updateDisplay(); return;
-                    }
                 }
             }
+            return moves;
+        }
 
-            // --- STRATEGY 4: AGGRESSIVE WEAK HAND targeting (LEVEL 4+) ---
-            if (currentLevel >= 4 && validHumanHands.length === 2) {
-                let targetHand = hands.p1.L >= hands.p1.R ? 'L' : 'R';
-                let bestCompAttacker = validCompHands[0];
-                for (let cHand of validCompHands) {
-                    if (hands.comp[cHand] > hands.comp[bestCompAttacker]) bestCompAttacker = cHand;
+        function applyMove(state, move, player) {
+            if (move.type === 'split') {
+                state[player].L = move.L;
+                state[player].R = move.R;
+            } else {
+                let opponent = (player === 'comp') ? 'p1' : 'comp';
+                state[opponent][move.target] += state[player][move.attacker];
+                if (state[opponent][move.target] >= 5) {
+                    state[opponent][move.target] = 0;
                 }
-                hands.p1[targetHand] += hands.comp[bestCompAttacker];
-                playSound('hit'); currentTurn = 'p1'; updateDisplay(); return;
+            }
+        }
+
+        function checkGameState(state) {
+            if (state.comp.L === 0 && state.comp.R === 0) return 'p1_win';
+            if (state.p1.L === 0 && state.p1.R === 0) return 'comp_win';
+            return 'ongoing';
+        }
+
+        function evaluateState(state) {
+            // High score favorability weighting parameters targeting human hand elimination
+            let score = 0;
+            
+            let compAlive = 0;
+            if (state.comp.L > 0) compAlive++;
+            if (state.comp.R > 0) compAlive++;
+            
+            let p1Alive = 0;
+            if (state.p1.L > 0) p1Alive++;
+            if (state.p1.R > 0) p1Alive++;
+
+            score += (compAlive * 40);
+            score -= (p1Alive * 50);
+
+            // Penalize leaving hands vulnerable to instant counter attacks
+            if (state.p1.L > 0) {
+                if (state.comp.L > 0 && (state.p1.L + state.comp.L >= 5)) score -= 25;
+                if (state.comp.R > 0 && (state.p1.L + state.comp.R >= 5)) score -= 25;
+            }
+            if (state.p1.R > 0) {
+                if (state.comp.L > 0 && (state.p1.R + state.comp.L >= 5)) score -= 25;
+                if (state.comp.R > 0 && (state.p1.R + state.comp.R >= 5)) score -= 25;
             }
 
-            // --- FALLBACK RANDOM MOVEMENT SYSTEM ---
-            if (validCompHands.length > 0 && validHumanHands.length > 0) {
-                let chosenCompHand = validCompHands[Math.floor(Math.random() * validCompHands.length)];
-                let chosenHumanTarget = validHumanHands[Math.floor(Math.random() * validHumanHands.length)];
-                hands.p1[chosenHumanTarget] += hands.comp[chosenCompHand];
-                playSound('hit'); currentTurn = 'p1'; updateDisplay();
-            }
+            return score;
+        }
+
+        function cloneState(state) {
+            return {
+                p1: { L: state.p1.L, R: state.p1.R },
+                comp: { L: state.comp.L, R: state.comp.R }
+            };
         }
 
         runFreshSetup();
