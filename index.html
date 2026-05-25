@@ -729,7 +729,7 @@
             let splitBtn = document.getElementById('p1-split-btn');
             if (currentTurn !== 'p1' || isMatchOver || selectedAttacker !== null) { splitBtn.disabled = true; return; }
             let totalFingers = hands.p1.L + hands.p1.R;
-            splitBtn.disabled = !(totalFingers >= 2 && totalFingers <= 5);
+            splitBtn.disabled = !(totalFingers >= 2 && totalFingers <= 8);
         }
 
         function handleActionButton() {
@@ -753,8 +753,13 @@
             document.getElementById('modal-total-fingers').innerText = totalFingers;
             let slider = document.getElementById('finger-slider');
             
-            if (totalFingers === 5) { slider.min = 1; slider.max = 4; } 
-            else { slider.min = 0; slider.max = totalFingers; }
+            slider.min = 0; 
+            slider.max = totalFingers;
+            
+            if (totalFingers > 4) {
+                slider.min = totalFingers - 4;
+                if (slider.max > 4) slider.max = 4;
+            }
             
             slider.value = hands.p1.L; 
             document.getElementById('slider-modal').style.display = 'block';
@@ -819,12 +824,19 @@
             let bestScore = -Infinity;
             let selectedMove = null;
             
-            // DYNAMIC DIFFICULTY SETTING:
-            // Match 1: Depth 2 (Looks 2 turns ahead)
-            // Match 2: Depth 3 (Looks 3 turns ahead)
-            // ...
-            // Match 5: Depth 6 (Looks 6 turns ahead)
-            let depthLimit = currentLevel + 1; 
+            // --- UPDATED LEVEL BALANCED DIFFICULTY ENGINE (Capped at Depth 3) ---
+            let depthLimit = 1; 
+            if (currentLevel === 1) {
+                depthLimit = 1; // 1.0 Difficulty
+            } else if (currentLevel === 2) {
+                depthLimit = (Math.random() < 0.5) ? 1 : 2; // 1.5 Difficulty
+            } else if (currentLevel === 3) {
+                depthLimit = 2; // 2.0 Difficulty
+            } else if (currentLevel === 4) {
+                depthLimit = (Math.random() < 0.5) ? 2 : 3; // 2.5 Difficulty
+            } else if (currentLevel === 5) {
+                depthLimit = 3; // 3.0 Difficulty (Capped)
+            }
 
             for (let move of moves) {
                 let stateCopy = cloneState(hands);
@@ -909,9 +921,9 @@
             }
 
             let totalSticks = pL + pR;
-            if (totalSticks >= 2 && totalSticks <= 5) {
-                let minSticks = (totalSticks === 5) ? 1 : 0;
-                let maxSticks = (totalSticks === 5) ? 4 : totalSticks;
+            if (totalSticks >= 2 && totalSticks <= 8) {
+                let minSticks = 0;
+                let maxSticks = totalSticks;
                 
                 for (let i = minSticks; i <= maxSticks; i++) {
                     let j = totalSticks - i;
