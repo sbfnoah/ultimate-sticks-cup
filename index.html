@@ -811,26 +811,25 @@
             }
         }
 
-        /* --- ULTRA HARD MINIMAX ARTIFICIAL INTELLIGENCE ---
-           Simulates all future branching possibilities to find the mathematically ideal choice.
-        */
+        /* --- STAGE-SCALED MINIMAX ARTIFICIAL INTELLIGENCE --- */
         function computerBrain() {
             if (isMatchOver) return;
 
-            // Generate all valid moves from the current state
             let moves = getValidMoves(hands, 'comp');
-            
             let bestScore = -Infinity;
             let selectedMove = null;
             
-            // Adjust calculations depth scaling cleanly based on current bracket progression
-            let depthLimit = currentLevel + 1; // Match 1 = Depth 2, Match 5 = Depth 6
+            // DYNAMIC DIFFICULTY SETTING:
+            // Match 1: Depth 2 (Looks 2 turns ahead)
+            // Match 2: Depth 3 (Looks 3 turns ahead)
+            // ...
+            // Match 5: Depth 6 (Looks 6 turns ahead)
+            let depthLimit = currentLevel + 1; 
 
             for (let move of moves) {
                 let stateCopy = cloneState(hands);
                 applyMove(stateCopy, move, 'comp');
                 
-                // Evaluate move using Minimax algorithm
                 let score = minimax(stateCopy, depthLimit, false, -Infinity, Infinity);
                 
                 if (score > bestScore) {
@@ -839,12 +838,10 @@
                 }
             }
 
-            // Fallback emergency safety guard check
             if (!selectedMove && moves.length > 0) {
                 selectedMove = moves[0];
             }
 
-            // Execute calculated ideal move choice safely
             if (selectedMove) {
                 if (selectedMove.type === 'split') {
                     hands.comp.L = selectedMove.L;
@@ -902,7 +899,6 @@
             let pL = state[player].L;
             let pR = state[player].R;
 
-            // Attack options
             if (pL > 0) {
                 if (state[opponent].L > 0) moves.push({ type: 'attack', attacker: 'L', target: 'L' });
                 if (state[opponent].R > 0) moves.push({ type: 'attack', attacker: 'L', target: 'R' });
@@ -912,7 +908,6 @@
                 if (state[opponent].R > 0) moves.push({ type: 'attack', attacker: 'R', target: 'R' });
             }
 
-            // Splitting / Rearranging options
             let totalSticks = pL + pR;
             if (totalSticks >= 2 && totalSticks <= 5) {
                 let minSticks = (totalSticks === 5) ? 1 : 0;
@@ -921,7 +916,6 @@
                 for (let i = minSticks; i <= maxSticks; i++) {
                     let j = totalSticks - i;
                     if (i < 5 && j < 5) {
-                        // Prevent identical state or plain side swaps
                         if (i !== pL && i !== pR) {
                             moves.push({ type: 'split', L: i, R: j });
                         }
@@ -951,7 +945,6 @@
         }
 
         function evaluateState(state) {
-            // High score favorability weighting parameters targeting human hand elimination
             let score = 0;
             
             let compAlive = 0;
@@ -965,7 +958,6 @@
             score += (compAlive * 40);
             score -= (p1Alive * 50);
 
-            // Penalize leaving hands vulnerable to instant counter attacks
             if (state.p1.L > 0) {
                 if (state.comp.L > 0 && (state.p1.L + state.comp.L >= 5)) score -= 25;
                 if (state.comp.R > 0 && (state.p1.L + state.comp.R >= 5)) score -= 25;
