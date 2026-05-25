@@ -118,10 +118,24 @@
         .player-side h3 {
             font-family: 'Permanent Marker', cursive;
             font-size: 2rem;
-            margin-top: 0;
+            margin-top: 5px;
             margin-bottom: 25px;
             text-decoration: underline;
         }
+
+        /* --- 8-BIT AVATAR CSS GRAPHICS GRID ENGINE --- */
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 10px auto;
+            border: 3px solid var(--pencil-gray);
+            background: #fff;
+            image-rendering: pixelated;
+        }
+        .pixel { width: 8px; height: 8px; }
 
         .stick {
             display: inline-block;
@@ -202,7 +216,7 @@
             border: 6px solid var(--pencil-gray);
             box-shadow: 20px 20px 0 rgba(0,0,0,0.2);
             z-index: 10;
-            width: 300px;
+            width: 320px;
         }
         .modal-overlay {
             display: none;
@@ -242,7 +256,25 @@
             border: 3px solid var(--pencil-gray);
             border-radius: 8px;
             text-align: center;
-            margin-top: 10px;
+            margin-top: 5px;
+        }
+
+        /* Avatar Selection Panel Setup */
+        .avatar-selection-box {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            gap: 5px;
+        }
+        .avatar-option {
+            cursor: pointer;
+            border: 3px solid transparent;
+            padding: 2px;
+            border-radius: 5px;
+        }
+        .avatar-option.selected {
+            border-color: var(--crayon-blue);
+            background: #ebf8ff;
         }
 
         .victory-screen {
@@ -277,6 +309,7 @@
 
     <div class="game-board">
         <div class="player-side" id="p1-card">
+            <div class="avatar-grid" id="p1-avatar-display"></div>
             <h3 id="p1-name-display">Noah</h3>
             <div class="hand-btn" id="p1L" onclick="selectHand('p1', 'L')">
                 <span class="hand-label">LEFT</span>
@@ -290,6 +323,7 @@
         </div>
 
         <div class="player-side" id="comp-card">
+            <div class="avatar-grid" id="comp-avatar-display"></div>
             <h3 id="opponent-name">Leo</h3>
             <div class="hand-btn" id="compL" onclick="selectHand('comp', 'L')">
                 <span class="hand-label">LEFT</span>
@@ -321,6 +355,21 @@
 
     <div class="modal" id="name-modal" style="display: none;">
         <h3>Welcome to the Cup!</h3>
+        <p>Choose Your Character Sprite:</p>
+        <div class="avatar-selection-box">
+            <div class="avatar-option selected" id="opt0" onclick="chooseAvatarPreset(0)">
+                <div class="avatar-grid" id="preset-preview-0"></div>
+            </div>
+            <div class="avatar-option" id="opt1" onclick="chooseAvatarPreset(1)">
+                <div class="avatar-grid" id="preset-preview-1"></div>
+            </div>
+            <div class="avatar-option" id="opt2" onclick="chooseAvatarPreset(2)">
+                <div class="avatar-grid" id="preset-preview-2"></div>
+            </div>
+            <div class="avatar-option" id="opt3" onclick="chooseAvatarPreset(3)">
+                <div class="avatar-grid" id="preset-preview-3"></div>
+            </div>
+        </div>
         <p>What is the Challenger's Name?</p>
         <input type="text" class="setup-input" id="name-field" value="Noah" maxlength="12">
         <div class="modal-btns" style="margin-top:15px;">
@@ -335,15 +384,32 @@
     </div>
 
     <script>
-        const opponents = ["Leo", "Mason", "Chloe", "Lucas", "The Champion"];
+        // Pool of random opponent names to pick from every fresh round loading
+        const poolNames = ["Leo", "Mason", "Chloe", "Lucas", "Maya", "Logan", "Harper", "Ethan", "Emma", "Jackson", "Oliver", "Aria", "Liam", "Sophia"];
         const maxLevels = 5;
         
-        let playerName = "Noah";
+        let opponents = [];
+        let opponentAvatars = []; // Holds color strings for enemies
         let currentLevel = 1; 
         let hands = { p1: { L: 1, R: 1 }, comp: { L: 1, R: 1 } };
         let currentTurn = 'p1'; 
         let selectedAttacker = null; 
         let isMatchOver = false;
+
+        let playerName = "Noah";
+        let selectedPlayerAvatarIndex = 0;
+
+        // --- 8-BIT PIXEL ART MATRIX MAPS (0=White background, 1=Primary, 2=Secondary/Eyes) ---
+        const avatarPresets = [
+            // Sprite 1: Retro Robo (Blue)
+            { primary: '#3182ce', secondary: '#000000', map: [0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 0,1,1,1,1,1,1,0, 0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 1,0,1,1,1,1,0,1, 1,0,1,0,0,1,0,1, 0,0,1,0,0,1,0,0] },
+            // Sprite 2: Space Alien (Green)
+            { primary: '#48bb78', secondary: '#e53e3e', map: [0,1,0,0,0,0,1,0, 0,0,1,0,0,1,0,0, 0,1,1,1,1,1,1,0, 1,1,2,1,1,2,1,1, 1,1,1,1,1,1,1,1, 0,1,1,1,1,1,1,0, 0,1,0,1,1,0,1,0, 1,0,0,0,0,0,0,1] },
+            // Sprite 3: Lunchroom Ninja (Purple)
+            { primary: '#805ad5', secondary: '#f6ad55', map: [0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 1,1,2,2,2,2,1,1, 1,1,0,2,2,0,1,1, 1,1,1,1,1,1,1,1, 0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 0,1,0,0,0,0,1,0] },
+            // Sprite 4: Secret Agent Bear (Brown)
+            { primary: '#a0aec0', secondary: '#2d3748', map: [1,1,0,0,0,0,1,1, 1,1,1,1,1,1,1,1, 1,2,1,1,1,1,2,1, 1,1,1,2,2,1,1,1, 0,1,1,1,1,1,1,0, 0,0,2,2,2,2,0,0, 0,2,2,2,2,2,2,0, 0,2,0,2,2,0,2,0] }
+        ];
 
         let audioCtx = null;
         let isMusicPlaying = false;
@@ -355,16 +421,12 @@
         const melodyNotes = [220.00, 261.63, 293.66, 329.63, 392.00, 440.00];
 
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
         function playSound(type) {
-            initAudio();
-            if (!audioCtx) return;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
+            initAudio(); if (!audioCtx) return;
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             let now = audioCtx.currentTime;
 
@@ -389,83 +451,95 @@
                 gain.gain.setValueAtTime(0.18, now); gain.gain.linearRampToValueAtTime(0, now + 0.6);
                 osc.start(now); osc.stop(now + 0.6);
             } else if (type === 'win') {
-                osc.type = 'square';
-                let notes = [261.63, 329.63, 392.00, 523.25];
+                osc.type = 'square'; let notes = [261.63, 329.63, 392.00, 523.25];
                 gain.gain.setValueAtTime(0.12, now);
                 notes.forEach((freq, index) => { osc.frequency.setValueAtTime(freq, now + (index * 0.08)); });
                 gain.gain.linearRampToValueAtTime(0, now + 0.45);
                 osc.start(now); osc.stop(now + 0.45);
             } else if (type === 'firework') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100 + Math.random() * 300, now);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100 + Math.random() * 300, now);
                 osc.frequency.exponentialRampToValueAtTime(10, now + 0.4);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.4);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0, now + 0.4);
                 osc.start(now); osc.stop(now + 0.4);
             }
         }
 
         function toggleBackgroundMusic() {
-            initAudio();
-            let btn = document.getElementById('music-btn');
-
+            initAudio(); let btn = document.getElementById('music-btn');
             if (isMusicPlaying) {
-                clearInterval(musicIntervalId);
-                isMusicPlaying = false;
-                btn.innerText = "🎵 Play Music";
-                btn.style.background = "#9b59b6";
+                clearInterval(musicIntervalId); isMusicPlaying = false;
+                btn.innerText = "🎵 Play Music"; btn.style.background = "#9b59b6";
             } else {
-                isMusicPlaying = true;
-                btn.innerText = "⏸ Mute Music";
-                btn.style.background = "#e74c3c";
-                
+                isMusicPlaying = true; btn.innerText = "⏸ Mute Music"; btn.style.background = "#e74c3c";
                 musicIntervalId = setInterval(() => {
-                    if (isMatchOver) return; 
-
-                    let now = audioCtx.currentTime;
-                    
+                    if (isMatchOver) return; let now = audioCtx.currentTime;
                     if (beatCounter % 2 === 0) {
-                        let bassOsc = audioCtx.createOscillator();
-                        let bassGain = audioCtx.createGain();
-                        bassOsc.connect(bassGain); bassGain.connect(audioCtx.destination);
-                        
-                        bassOsc.type = 'triangle';
-                        let currentBass = bassNotes[Math.floor(beatCounter / 4) % bassNotes.length];
-                        bassOsc.frequency.setValueAtTime(currentBass, now);
-                        
-                        bassGain.gain.setValueAtTime(0.06, now);
-                        bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                        
-                        bassOsc.start(now);
-                        bassOsc.stop(now + 0.25);
+                        let bassOsc = audioCtx.createOscillator(); let bassGain = audioCtx.createGain();
+                        bassOsc.connect(bassGain); bassGain.connect(audioCtx.destination); bassOsc.type = 'triangle';
+                        bassOsc.frequency.setValueAtTime(bassNotes[Math.floor(beatCounter / 4) % bassNotes.length], now);
+                        bassGain.gain.setValueAtTime(0.06, now); bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                        bassOsc.start(now); bassOsc.stop(now + 0.25);
                     }
-
                     if (beatCounter % 4 === 0 && Math.random() < 0.65) {
-                        let melOsc = audioCtx.createOscillator();
-                        let melGain = audioCtx.createGain();
-                        melOsc.connect(melGain); melGain.connect(audioCtx.destination);
-                        
-                        melOsc.type = 'square';
-                        let randomNote = melodyNotes[Math.floor(Math.random() * melodyNotes.length)];
-                        melOsc.frequency.setValueAtTime(randomNote, now);
-                        
-                        melGain.gain.setValueAtTime(0.015, now); 
-                        melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-                        
-                        melOsc.start(now);
-                        melOsc.stop(now + 0.18);
+                        let melOsc = audioCtx.createOscillator(); let melGain = audioCtx.createGain();
+                        melOsc.connect(melGain); melGain.connect(audioCtx.destination); melOsc.type = 'square';
+                        melOsc.frequency.setValueAtTime(melodyNotes[Math.floor(Math.random() * melodyNotes.length)], now);
+                        melGain.gain.setValueAtTime(0.015, now); melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                        melOsc.start(now); melOsc.stop(now + 0.18);
                     }
-
                     beatCounter = (beatCounter + 1) % 16;
                 }, 180);
             }
         }
 
-        // --- FIXED: Wiped out all active localStorage saves on load initialization ---
+        // --- RENDER PIXEL AVATARS INTO HTML SQUARES ---
+        function renderAvatar(targetElementId, preset) {
+            let container = document.getElementById(targetElementId);
+            container.innerHTML = '';
+            for (let val of preset.map) {
+                let pixel = document.createElement('div');
+                pixel.className = 'pixel';
+                if (val === 1) pixel.style.backgroundColor = preset.primary;
+                else if (val === 2) pixel.style.backgroundColor = preset.secondary;
+                else pixel.style.backgroundColor = 'transparent';
+                container.appendChild(pixel);
+            }
+        }
+
+        // Build 5 completely dynamic, random classmate profiles
+        function generateRandomOpponents() {
+            opponents = [];
+            opponentAvatars = [];
+            // Shuffled helper list
+            let namesShuffle = [...poolNames].sort(() => Math.random() - 0.5);
+            
+            for (let i = 0; i < maxLevels - 1; i++) {
+                opponents.push(namesShuffle[i]);
+                // Select a random sprite preset model for this student
+                opponentAvatars.push(avatarPresets[Math.floor(Math.random() * avatarPresets.length)]);
+            }
+            opponents.push("The Champion");
+            // Give the champ a customized crimson/gold color template palette swap
+            opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ecc94b', map: avatarPresets[0].map };
+            opponentAvatars.push(opponentsAvatarsChamp);
+        }
+
         function runFreshSetup() {
-            // Force names registration card to show every single refresh load
+            generateRandomOpponents();
+            // Render the 4 character select preview choices cards inside setup modal box
+            for (let i = 0; i < 4; i++) {
+                renderAvatar(`preset-preview-${i}`, avatarPresets[i]);
+            }
             document.getElementById('name-modal').style.display = 'block';
             document.getElementById('overlay').style.display = 'block';
+        }
+
+        function chooseAvatarPreset(idx) {
+            playSound('select');
+            selectedPlayerAvatarIndex = idx;
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`opt${i}`).classList.toggle('selected', i === idx);
+            }
         }
 
         function saveCustomName() {
@@ -475,29 +549,33 @@
             document.getElementById('name-modal').style.display = 'none';
             document.getElementById('overlay').style.display = 'none';
             playSound('win');
+            
+            // Draw selected user sprite to Noah's profile card layout
+            renderAvatar('p1-avatar-display', avatarPresets[selectedPlayerAvatarIndex]);
             updateDisplay();
         }
 
         function triggerChampionVictory() {
             playSound('win');
-            document.getElementById('victory-announcement').innerText = `🏆 ${playerName.toUpperCase()} HAS DEFEATED THE CHAMPION! 🏆`;
+            document.getElementById('victory-announcement').innerText = `🏆 ${playerName.toUpperCase()} HAS DEFEATED ${opponents[currentLevel-1].toUpperCase()}! 🏆`;
             document.getElementById('victory-overlay').style.display = 'flex';
-            
-            fireworkIntervalId = setInterval(() => {
-                playSound('firework');
-            }, 350);
+            fireworkIntervalId = setInterval(() => { playSound('firework'); }, 350);
         }
 
         function closeVictoryOverlay() {
             clearInterval(fireworkIntervalId);
             document.getElementById('victory-overlay').style.display = 'none';
             currentLevel = 1;
+            generateRandomOpponents();
             resetCurrentMatch();
         }
 
         function updateDisplay() {
             document.getElementById('opponent-name').innerText = opponents[currentLevel - 1];
             document.getElementById('level-badge').innerText = `Match ${currentLevel}/${maxLevels} vs ${opponents[currentLevel - 1]}`;
+            
+            // Inject correct corresponding random AI competitor pixel graphics node frame
+            renderAvatar('comp-avatar-display', opponentAvatars[currentLevel - 1]);
 
             let p1AliveCount = 0; let compAliveCount = 0;
 
@@ -532,10 +610,7 @@
             if (compAliveCount === 0) {
                 if (!isMatchOver) {
                     if (currentLevel === maxLevels) {
-                        isMatchOver = true; 
-                        disableSplitButton();
-                        triggerChampionVictory();
-                        return;
+                        isMatchOver = true; disableSplitButton(); triggerChampionVictory(); return;
                     } else {
                         playSound('win');
                     }
@@ -572,7 +647,7 @@
             playSound('select');
             let btnText = document.getElementById('action-btn').innerText;
             if (btnText.includes("ADVANCE")) { currentLevel++; resetCurrentMatch(); } 
-            else if (btnText.includes("RESTART ENTIRE")) { currentLevel = 1; resetCurrentMatch(); } 
+            else if (btnText.includes("RESTART ENTIRE")) { currentLevel = 1; generateRandomOpponents(); resetCurrentMatch(); } 
             else { resetCurrentMatch(); }
         }
 
@@ -587,16 +662,10 @@
             playSound('select');
             let totalFingers = hands.p1.L + hands.p1.R;
             document.getElementById('modal-total-fingers').innerText = totalFingers;
-            
             let slider = document.getElementById('finger-slider');
             
-            if (totalFingers === 5) {
-                slider.min = 1;
-                slider.max = 4;
-            } else {
-                slider.min = 0;
-                slider.max = totalFingers;
-            }
+            if (totalFingers === 5) { slider.min = 1; slider.max = 4; } 
+            else { slider.min = 0; slider.max = totalFingers; }
             
             slider.value = hands.p1.L; 
             document.getElementById('slider-modal').style.display = 'block';
@@ -607,9 +676,8 @@
         function updateSliderValues() {
             let totalFingers = hands.p1.L + hands.p1.R;
             let leftVal = parseInt(document.getElementById('finger-slider').value);
-            let rightVal = totalFingers - leftVal;
             document.getElementById('label-left').innerText = `L: ${leftVal}`;
-            document.getElementById('label-right').innerText = `R: ${rightVal}`;
+            document.getElementById('label-right').innerText = `R: ${totalFingers - leftVal}`;
         }
 
         function closeModal() {
@@ -627,8 +695,7 @@
             if (leftVal === hands.p1.R && rightVal === hands.p1.L) { alert("Can't just swap 'em!"); return; }
 
             if (leftVal >= 5 || rightVal >= 5) {
-                alert("Nice try, but you can't split into 5! That would instantly eliminate your own hand.");
-                return;
+                alert("Nice try, but you can't split into 5! That would instantly eliminate your own hand."); return;
             }
 
             hands.p1.L = leftVal; hands.p1.R = rightVal;
@@ -692,9 +759,7 @@
                 if (threatDetected && compTotal >= 2 && compTotal <= 4 && Math.random() < 0.70) {
                     let shuffles = [];
                     for (let i = 0; i <= compTotal; i++) {
-                        if (i !== 5 && (compTotal - i) !== 5 && i !== hands.comp.L && i !== hands.comp.R) {
-                            shuffles.push({L: i, R: compTotal - i});
-                        }
+                        if (i !== 5 && (compTotal - i) !== 5 && i !== hands.comp.L && i !== hands.comp.R) { shuffles.push({L: i, R: compTotal - i}); }
                     }
                     if (shuffles.length > 0) {
                         let pick = shuffles[Math.floor(Math.random() * shuffles.length)];
@@ -717,9 +782,7 @@
             if (isSmartMove && validCompHands.length > 0 && validHumanHands.length > 0) {
                 for (let cHand of validCompHands) {
                     for (let hHand of validHumanHands) {
-                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) {
-                            chosenCompHand = cHand; chosenHumanTarget = hHand; break;
-                        }
+                        if (hands.comp[cHand] + hands.p1[hHand] >= 5) { chosenCompHand = cHand; chosenHumanTarget = hHand; break; }
                     }
                     if (chosenCompHand) break;
                 }
@@ -730,14 +793,11 @@
                 chosenHumanTarget = validHumanHands[Math.floor(Math.random() * validHumanHands.length)];
             }
 
-            let damage = hands.comp[chosenCompHand];
-            hands.p1[chosenHumanTarget] += damage;
+            hands.p1[chosenHumanTarget] += hands.comp[chosenCompHand];
             playSound('hit'); currentTurn = 'p1'; updateDisplay();
         }
 
-        // Run completely fresh configuration directly on page loading
         runFreshSetup();
-        updateDisplay();
     </script>
 </body>
 </html>
