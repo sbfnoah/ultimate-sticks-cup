@@ -259,7 +259,6 @@
             margin-top: 5px;
         }
 
-        /* Avatar Selection Panel Setup */
         .avatar-selection-box {
             display: flex;
             justify-content: space-around;
@@ -310,7 +309,7 @@
     <div class="game-board">
         <div class="player-side" id="p1-card">
             <div class="avatar-grid" id="p1-avatar-display"></div>
-            <h3 id="p1-name-display">Noah</h3>
+            <h3 id="p1-name-display">&nbsp;</h3>
             <div class="hand-btn" id="p1L" onclick="selectHand('p1', 'L')">
                 <span class="hand-label">LEFT</span>
                 <div class="sticks-container" id="p1L-sticks"><span class="stick"></span></div>
@@ -371,7 +370,7 @@
             </div>
         </div>
         <p>What is Your Name?</p>
-        <input type="text" class="setup-input" id="name-field" value="Noah" maxlength="12">
+        <input type="text" class="setup-input" id="name-field" placeholder="Noah" maxlength="12">
         <div class="modal-btns" style="margin-top:15px;">
             <button style="background:#3182ce; color:white; width: 80%;" onclick="saveCustomName()">ENTER TOURNAMENT</button>
         </div>
@@ -384,12 +383,11 @@
     </div>
 
     <script>
-        // Pool of random opponent names to pick from every fresh round loading
         const poolNames = ["Leo", "Mason", "Chloe", "Lucas", "Maya", "Logan", "Harper", "Ethan", "Emma", "Jackson", "Oliver", "Aria", "Liam", "Sophia"];
         const maxLevels = 5;
         
         let opponents = [];
-        let opponentAvatars = []; // Holds color strings for enemies
+        let opponentAvatars = []; 
         let currentLevel = 1; 
         let hands = { p1: { L: 1, R: 1 }, comp: { L: 1, R: 1 } };
         let currentTurn = 'p1'; 
@@ -399,15 +397,10 @@
         let playerName = "Noah";
         let selectedPlayerAvatarIndex = 0;
 
-        // --- 8-BIT PIXEL ART MATRIX MAPS (0=White background, 1=Primary, 2=Secondary/Eyes) ---
         const avatarPresets = [
-            // Sprite 1: Retro Robo (Blue)
             { primary: '#3182ce', secondary: '#000000', map: [0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 0,1,1,1,1,1,1,0, 0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 1,0,1,1,1,1,0,1, 1,0,1,0,0,1,0,1, 0,0,1,0,0,1,0,0] },
-            // Sprite 2: Space Alien (Green)
             { primary: '#48bb78', secondary: '#e53e3e', map: [0,1,0,0,0,0,1,0, 0,0,1,0,0,1,0,0, 0,1,1,1,1,1,1,0, 1,1,2,1,1,2,1,1, 1,1,1,1,1,1,1,1, 0,1,1,1,1,1,1,0, 0,1,0,1,1,0,1,0, 1,0,0,0,0,0,0,1] },
-            // Sprite 3: Lunchroom Ninja (Purple)
             { primary: '#805ad5', secondary: '#f6ad55', map: [0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 1,1,2,2,2,2,1,1, 1,1,0,2,2,0,1,1, 1,1,1,1,1,1,1,1, 0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 0,1,0,0,0,0,1,0] },
-            // Sprite 4: Secret Agent Bear (Brown)
             { primary: '#a0aec0', secondary: '#2d3748', map: [1,1,0,0,0,0,1,1, 1,1,1,1,1,1,1,1, 1,2,1,1,1,1,2,1, 1,1,1,2,2,1,1,1, 0,1,1,1,1,1,1,0, 0,0,2,2,2,2,0,0, 0,2,2,2,2,2,2,0, 0,2,0,2,2,0,2,0] }
         ];
 
@@ -492,7 +485,6 @@
             }
         }
 
-        // --- RENDER PIXEL AVATARS INTO HTML SQUARES ---
         function renderAvatar(targetElementId, preset) {
             let container = document.getElementById(targetElementId);
             container.innerHTML = '';
@@ -506,27 +498,22 @@
             }
         }
 
-        // Build 5 completely dynamic, random classmate profiles
         function generateRandomOpponents() {
             opponents = [];
             opponentAvatars = [];
-            // Shuffled helper list
             let namesShuffle = [...poolNames].sort(() => Math.random() - 0.5);
             
             for (let i = 0; i < maxLevels - 1; i++) {
                 opponents.push(namesShuffle[i]);
-                // Select a random sprite preset model for this student
                 opponentAvatars.push(avatarPresets[Math.floor(Math.random() * avatarPresets.length)]);
             }
             opponents.push("The Champion");
-            // Give the champ a customized crimson/gold color template palette swap
             opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ecc94b', map: avatarPresets[0].map };
             opponentAvatars.push(opponentsAvatarsChamp);
         }
 
         function runFreshSetup() {
             generateRandomOpponents();
-            // Render the 4 character select preview choices cards inside setup modal box
             for (let i = 0; i < 4; i++) {
                 renderAvatar(`preset-preview-${i}`, avatarPresets[i]);
             }
@@ -544,13 +531,14 @@
 
         function saveCustomName() {
             let input = document.getElementById('name-field').value.trim();
-            if(input) playerName = input;
+            // FIXED: If input is empty, read the placeholder value "Noah" as fallback tracking
+            playerName = input ? input : "Noah";
+            
             document.getElementById('p1-name-display').innerText = playerName;
             document.getElementById('name-modal').style.display = 'none';
             document.getElementById('overlay').style.display = 'none';
             playSound('win');
             
-            // Draw selected user sprite to Noah's profile card layout
             renderAvatar('p1-avatar-display', avatarPresets[selectedPlayerAvatarIndex]);
             updateDisplay();
         }
@@ -574,7 +562,6 @@
             document.getElementById('opponent-name').innerText = opponents[currentLevel - 1];
             document.getElementById('level-badge').innerText = `Match ${currentLevel}/${maxLevels} vs ${opponents[currentLevel - 1]}`;
             
-            // Inject correct corresponding random AI competitor pixel graphics node frame
             renderAvatar('comp-avatar-display', opponentAvatars[currentLevel - 1]);
 
             let p1AliveCount = 0; let compAliveCount = 0;
