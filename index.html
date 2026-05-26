@@ -34,8 +34,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px;
-            max-width: 800px;
+            flex-wrap: wrap;
+            gap: 15px;
+            max-width: 850px;
             margin: 0 auto;
         }
 
@@ -48,9 +49,8 @@
             transform: rotate(-1.5deg);
         }
 
-        #music-btn {
+        .top-btn {
             font-family: 'Permanent Marker', cursive;
-            background: #9b59b6;
             color: white;
             border: 3px solid var(--pencil-gray);
             padding: 8px 15px;
@@ -58,8 +58,15 @@
             cursor: pointer;
             font-size: 1.1rem;
             box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+            text-decoration: none;
+            display: inline-block;
         }
+
+        #music-btn { background: #9b59b6; }
         #music-btn:hover { background: #8e44ad; }
+
+        #main-share-btn { background: #48bb78; }
+        #main-share-btn:hover { background: #38a169; transform: scale(1.03); }
 
         .tournament-badge {
             font-family: 'Permanent Marker', cursive;
@@ -327,20 +334,28 @@
             box-shadow: 5px 5px 0 rgba(0,0,0,0.3);
         }
 
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+            width: 260px;
+        }
+
         .share-sms-btn {
             font-family: 'Permanent Marker', cursive;
             background-color: #3182ce;
             color: white;
             border: 3px solid var(--pencil-gray);
-            padding: 12px 25px;
+            padding: 12px 20px;
             border-radius: 12px;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             cursor: pointer;
-            margin-top: 10px;
             box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
             transition: transform 0.1s;
             text-decoration: none;
-            display: inline-block;
+            display: block;
+            text-align: center;
         }
         .share-sms-btn:hover { background-color: #2b6cb0; transform: scale(1.05); }
 
@@ -354,7 +369,8 @@
 
     <div class="header-container">
         <h1>Ultimate Sticks Cup</h1>
-        <button id="music-btn" onclick="toggleBackgroundMusic()">🎵 Play Music</button>
+        <button id="music-btn" class="top-btn" onclick="toggleBackgroundMusic()">🎵 Play Music</button>
+        <a href="#" id="main-share-btn" class="top-btn" onclick="updateInviteLink()">Share To Others 📱</a>
     </div>
 
     <div class="tournament-badge" id="level-badge">Match 1/5 vs Leo</div>
@@ -442,12 +458,14 @@
             <p style="font-size: 1.1rem; margin: 0 0 10px 0; font-style: italic;">Take a screenshot to flex your record!</p>
         </div>
         
-        <a href="#" class="share-sms-btn" id="sms-share-link">Text Your Time 📱</a>
-        <button id="action-btn" style="margin-top:20px; background:#4a4a4a;" onclick="closeVictoryOverlay()">PLAY AGAIN</button>
+        <div class="btn-container">
+            <a href="#" class="share-sms-btn" id="sms-share-link">Text Your Record 🏆</a>
+            <button id="action-btn" style="margin-top:10px; background:#4a4a4a; width: 100%;" onclick="closeVictoryOverlay()">PLAY AGAIN</button>
+        </div>
     </div>
 
     <script>
-        const poolNames = ["Leo", "Mason", "Chloe", "Lucas", "Maya", "Logan", "Harper", "Ethan", "Emma", "Jackson", "Oliver", "Aria", "Liam", "Sophia"];
+        const poolNames = ["Enzo", "Jackson", "Jack", "Greyson", "Landon", "Jerry", "Gavin", "Joey"];
         const maxLevels = 5;
         
         let opponents = [];
@@ -485,14 +503,12 @@
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        /* Fixed Node Leak: Clean connections on finish */
         function playSound(type) {
             initAudio(); if (!audioCtx) return;
             let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             let now = audioCtx.currentTime;
 
-            // Setup automated disconnection safely
             osc.onended = () => {
                 osc.disconnect();
                 gain.disconnect();
@@ -566,7 +582,6 @@
             let container = document.getElementById(targetElementId);
             container.innerHTML = '';
             
-            // Optimized Fragment DOM creation to avoid performance hitching
             let frag = document.createDocumentFragment();
             for (let val of preset.map) {
                 let pixel = document.createElement('div');
@@ -588,7 +603,7 @@
                 opponents.push(namesShuffle[i]);
                 opponentAvatars.push(avatarPresets[Math.floor(Math.random() * avatarPresets.length)]);
             }
-            opponents.push("The Champion");
+            opponents.push("Noah");
             let opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ecc94b', map: avatarPresets[0].map };
             opponentAvatars.push(opponentsAvatarsChamp);
         }
@@ -618,6 +633,13 @@
             document.getElementById('timer-display').innerText = finalFormattedTime;
         }
 
+        /* Updates link format properties directly from the layout bar anchor link element */
+        function updateInviteLink() {
+            let gameLink = window.location.href;
+            let inviteMessage = `Come play the Ultimate Sticks Cup with me! Let's see who can get the fastest speedrun record. 🕹️🏆\nLink: ${gameLink}`;
+            document.getElementById('main-share-btn').href = `sms:?&body=${encodeURIComponent(inviteMessage)}`;
+        }
+
         function runFreshSetup() {
             generateRandomOpponents();
             for (let i = 0; i < 4; i++) {
@@ -626,6 +648,7 @@
             document.getElementById('name-modal').style.display = 'block';
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('timer-display').innerText = "00:00.00";
+            updateInviteLink();
         }
 
         function chooseAvatarPreset(idx) {
@@ -657,8 +680,10 @@
             document.getElementById('victory-announcement').innerText = `🏆 ${playerName.toUpperCase()} WON THE TOURNAMENT! 🏆`;
             document.getElementById('victory-time-display').innerText = finalFormattedTime;
             
-            let textMessage = `I just beat the Ultimate Sticks Cup in ${finalFormattedTime}! Bet you can't top that! 🎮🔥`;
-            document.getElementById('sms-share-link').href = `sms:?&body=${encodeURIComponent(textMessage)}`;
+            let gameLink = window.location.href;
+            
+            let recordMessage = `I just beat the Ultimate Sticks Cup in ${finalFormattedTime}! Can you beat my run? 🎮🔥\nPlay here: ${gameLink}`;
+            document.getElementById('sms-share-link').href = `sms:?&body=${encodeURIComponent(recordMessage)}`;
             
             document.getElementById('victory-overlay').style.display = 'flex';
             fireworkIntervalId = setInterval(() => { playSound('firework'); }, 350);
@@ -692,7 +717,6 @@
                     } else {
                         btn.classList.remove('dead'); sticksContainer.innerHTML = ''; 
                         
-                        // Optimized visual rendering loop string construction
                         let stickMarkup = '';
                         for(let i=0; i<value; i++) { stickMarkup += '<span class="stick"></span>'; }
                         sticksContainer.innerHTML = stickMarkup;
@@ -999,7 +1023,6 @@
             return score;
         }
 
-        /* Garbage Collection Optimization: Flat values clone */
         function cloneState(state) {
             return {
                 p1: { L: state.p1.L, R: state.p1.R },
