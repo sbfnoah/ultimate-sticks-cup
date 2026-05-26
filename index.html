@@ -295,6 +295,13 @@
             background: #ebf8ff;
         }
 
+        .avatar-label {
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin: 2px 0 0 0;
+            color: var(--pencil-gray);
+        }
+
         .victory-screen {
             display: none;
             position: fixed;
@@ -427,19 +434,23 @@
 
     <div class="modal" id="name-modal" style="display: none;">
         <h3>Welcome to the Cup!</h3>
-        <p>Choose Your Character Sprite:</p>
+        <p>Choose Your Athlete:</p>
         <div class="avatar-selection-box">
             <div class="avatar-option selected" id="opt0" onclick="chooseAvatarPreset(0)">
                 <div class="avatar-grid" id="preset-preview-0"></div>
+                <div class="avatar-label">Baseball</div>
             </div>
             <div class="avatar-option" id="opt1" onclick="chooseAvatarPreset(1)">
                 <div class="avatar-grid" id="preset-preview-1"></div>
+                <div class="avatar-label">Soccer</div>
             </div>
             <div class="avatar-option" id="opt2" onclick="chooseAvatarPreset(2)">
                 <div class="avatar-grid" id="preset-preview-2"></div>
+                <div class="avatar-label">Football</div>
             </div>
             <div class="avatar-option" id="opt3" onclick="chooseAvatarPreset(3)">
                 <div class="avatar-grid" id="preset-preview-3"></div>
+                <div class="avatar-label">Hockey</div>
             </div>
         </div>
         <p>What is Your Name?</p>
@@ -483,11 +494,18 @@
         let startTime = null;
         let finalFormattedTime = "00:00.00";
 
+        /* --- SPORTS INTEGRATED PIXEL CUSTOM DESIGN CONFIGS ---
+           0 = Transparent, 1 = Primary, 2 = Secondary, Custom hex strings matched turn-by-turn inside rendering engine
+        */
         const avatarPresets = [
-            { primary: '#3182ce', secondary: '#000000', map: [0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 0,1,1,1,1,1,1,0, 0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 1,0,1,1,1,1,0,1, 1,0,1,0,0,1,0,1, 0,0,1,0,0,1,0,0] },
-            { primary: '#48bb78', secondary: '#e53e3e', map: [0,1,0,0,0,0,1,0, 0,0,1,0,0,1,0,0, 0,1,1,1,1,1,1,0, 1,1,2,1,1,2,1,1, 1,1,1,1,1,1,1,1, 0,1,1,1,1,1,1,0, 0,1,0,1,1,0,1,0, 1,0,0,0,0,0,0,1] },
-            { primary: '#805ad5', secondary: '#f6ad55', map: [0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 1,1,2,2,2,2,1,1, 1,1,0,2,2,0,1,1, 1,1,1,1,1,1,1,1, 0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 0,1,0,0,0,0,1,0] },
-            { primary: '#a0aec0', secondary: '#2d3748', map: [1,1,0,0,0,0,1,1, 1,1,1,1,1,1,1,1, 1,2,1,1,1,1,2,1, 1,1,1,2,2,1,1,1, 0,1,1,1,1,1,1,0, 0,0,2,2,2,2,0,0, 0,2,2,2,2,2,2,0, 0,2,0,2,2,0,2,0] }
+            // 0: Baseball Player (Pinstripe Jersey, Cap Visor, Red Mitt)
+            { primary: '#4a5568', secondary: '#e53e3e', map: [0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 0,0,1,1,1,1,0,0, 1,0,1,0,1,0,1,0, 1,0,1,0,1,0,1,0, 1,1,1,1,1,1,1,1, 0,2,2,1,1,0,0,0, 0,2,2,1,1,0,0,0] },
+            // 1: Soccer Player (Pitch Green Uniform, White Jersey, Soccer Ball Icon)
+            { primary: '#ffffff', secondary: '#2f855a', map: [0,0,2,2,2,2,0,0, 0,2,2,2,2,2,2,0, 0,1,1,1,1,1,1,0, 1,1,0,1,1,0,1,1, 1,1,1,0,1,1,1,1, 0,1,1,1,1,1,1,0, 0,2,2,0,0,2,2,0, 2,2,0,0,0,0,2,2] },
+            // 2: Football Player (Navy Team Colors, Shoulder Pads, Orange Face Mask Cage)
+            { primary: '#1a365d', secondary: '#ed8936', map: [0,2,2,2,2,2,2,0, 2,2,2,2,2,2,2,2, 2,2,0,2,2,0,2,2, 0,2,2,2,2,2,2,0, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 0,1,1,1,1,1,1,0, 0,1,1,0,0,1,1,0] },
+            // 3: Hockey Player (Ice White, Helmet Mask Visor, Black Puck Target)
+            { primary: '#edf2f7', secondary: '#2d3748', map: [0,0,1,1,1,1,0,0, 0,1,2,2,2,2,1,0, 0,1,1,1,1,1,1,0, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 0,1,1,1,1,1,1,0, 0,1,1,0,0,1,1,0, 0,2,2,0,0,0,0,0] }
         ];
 
         let audioCtx = null;
@@ -594,19 +612,15 @@
             container.appendChild(frag);
         }
 
-        /* Fixed Opponent Generator: Pulls unique names, locks Round 5 to 'The Champ' */
         function generateRandomOpponents() {
             opponents = [];
             opponentAvatars = [];
-            // Create a shuffled clone of the name pool
             let namesShuffle = [...poolNames].sort(() => Math.random() - 0.5);
             
-            // Draw unique non-repeating names for matches 1 to 4
             for (let i = 0; i < maxLevels - 1; i++) {
                 opponents.push(namesShuffle[i]);
                 opponentAvatars.push(avatarPresets[Math.floor(Math.random() * avatarPresets.length)]);
             }
-            // Set final boss name back to 'The Champ'
             opponents.push("The Champ");
             let opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ecc94b', map: avatarPresets[0].map };
             opponentAvatars.push(opponentsAvatarsChamp);
