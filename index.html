@@ -434,23 +434,23 @@
 
     <div class="modal" id="name-modal" style="display: none;">
         <h3>Welcome to the Cup!</h3>
-        <p>Choose Your Athlete:</p>
+        <p>Choose Your Player Color:</p>
         <div class="avatar-selection-box">
             <div class="avatar-option selected" id="opt0" onclick="chooseAvatarPreset(0)">
                 <div class="avatar-grid" id="preset-preview-0"></div>
-                <div class="avatar-label">Baseball</div>
+                <div class="avatar-label">Red Hat</div>
             </div>
             <div class="avatar-option" id="opt1" onclick="chooseAvatarPreset(1)">
                 <div class="avatar-grid" id="preset-preview-1"></div>
-                <div class="avatar-label">Soccer</div>
+                <div class="avatar-label">Blue Hat</div>
             </div>
             <div class="avatar-option" id="opt2" onclick="chooseAvatarPreset(2)">
                 <div class="avatar-grid" id="preset-preview-2"></div>
-                <div class="avatar-label">Football</div>
+                <div class="avatar-label">Green Hat</div>
             </div>
             <div class="avatar-option" id="opt3" onclick="chooseAvatarPreset(3)">
                 <div class="avatar-grid" id="preset-preview-3"></div>
-                <div class="avatar-label">Hockey</div>
+                <div class="avatar-label">Orange Hat</div>
             </div>
         </div>
         <p>What is Your Name?</p>
@@ -494,18 +494,18 @@
         let startTime = null;
         let finalFormattedTime = "00:00.00";
 
-        /* --- SPORTS INTEGRATED PIXEL CUSTOM DESIGN CONFIGS ---
-           0 = Transparent, 1 = Primary, 2 = Secondary, Custom hex strings matched turn-by-turn inside rendering engine
+        /* --- UPDATED CHARACTER PIXEL MAPS: BASEBALL HAT DESIGN ---
+           0 = Transparent, 1 = Hat Color, 2 = Face/Body
         */
         const avatarPresets = [
-            // 0: Baseball Player (Pinstripe Jersey, Cap Visor, Red Mitt)
-            { primary: '#4a5568', secondary: '#e53e3e', map: [0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 0,0,1,1,1,1,0,0, 1,0,1,0,1,0,1,0, 1,0,1,0,1,0,1,0, 1,1,1,1,1,1,1,1, 0,2,2,1,1,0,0,0, 0,2,2,1,1,0,0,0] },
-            // 1: Soccer Player (Pitch Green Uniform, White Jersey, Soccer Ball Icon)
-            { primary: '#ffffff', secondary: '#2f855a', map: [0,0,2,2,2,2,0,0, 0,2,2,2,2,2,2,0, 0,1,1,1,1,1,1,0, 1,1,0,1,1,0,1,1, 1,1,1,0,1,1,1,1, 0,1,1,1,1,1,1,0, 0,2,2,0,0,2,2,0, 2,2,0,0,0,0,2,2] },
-            // 2: Football Player (Navy Team Colors, Shoulder Pads, Orange Face Mask Cage)
-            { primary: '#1a365d', secondary: '#ed8936', map: [0,2,2,2,2,2,2,0, 2,2,2,2,2,2,2,2, 2,2,0,2,2,0,2,2, 0,2,2,2,2,2,2,0, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 0,1,1,1,1,1,1,0, 0,1,1,0,0,1,1,0] },
-            // 3: Hockey Player (Ice White, Helmet Mask Visor, Black Puck Target)
-            { primary: '#edf2f7', secondary: '#2d3748', map: [0,0,1,1,1,1,0,0, 0,1,2,2,2,2,1,0, 0,1,1,1,1,1,1,0, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 0,1,1,1,1,1,1,0, 0,1,1,0,0,1,1,0, 0,2,2,0,0,0,0,0] }
+            // 0: Red Hat
+            { primary: '#d9534f', secondary: '#F3E5AB', map: [0,0,1,1,1,0,0,0, 0,1,1,1,1,1,0,0, 0,0,1,1,1,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,0,2,0,0,0, 0,0,2,0,2,0,0,0] },
+            // 1: Blue Hat
+            { primary: '#3182ce', secondary: '#F3E5AB', map: [0,0,1,1,1,0,0,0, 0,1,1,1,1,1,0,0, 0,0,1,1,1,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,0,2,0,0,0, 0,0,2,0,2,0,0,0] },
+            // 2: Green Hat
+            { primary: '#48bb78', secondary: '#F3E5AB', map: [0,0,1,1,1,0,0,0, 0,1,1,1,1,1,0,0, 0,0,1,1,1,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,0,2,0,0,0, 0,0,2,0,2,0,0,0] },
+            // 3: Orange Hat
+            { primary: '#f6ad55', secondary: '#F3E5AB', map: [0,0,1,1,1,0,0,0, 0,1,1,1,1,1,0,0, 0,0,1,1,1,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,0,2,0,0,0, 0,0,2,0,2,0,0,0] }
         ];
 
         let audioCtx = null;
@@ -622,7 +622,7 @@
                 opponentAvatars.push(avatarPresets[Math.floor(Math.random() * avatarPresets.length)]);
             }
             opponents.push("The Champ");
-            let opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ecc94b', map: avatarPresets[0].map };
+            let opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ECC94B', map: avatarPresets[0].map };
             opponentAvatars.push(opponentsAvatarsChamp);
         }
 
