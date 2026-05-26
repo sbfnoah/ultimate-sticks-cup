@@ -594,16 +594,20 @@
             container.appendChild(frag);
         }
 
+        /* Fixed Opponent Generator: Pulls unique names, locks Round 5 to 'The Champ' */
         function generateRandomOpponents() {
             opponents = [];
             opponentAvatars = [];
+            // Create a shuffled clone of the name pool
             let namesShuffle = [...poolNames].sort(() => Math.random() - 0.5);
             
+            // Draw unique non-repeating names for matches 1 to 4
             for (let i = 0; i < maxLevels - 1; i++) {
                 opponents.push(namesShuffle[i]);
                 opponentAvatars.push(avatarPresets[Math.floor(Math.random() * avatarPresets.length)]);
             }
-            opponents.push("Noah");
+            // Set final boss name back to 'The Champ'
+            opponents.push("The Champ");
             let opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ecc94b', map: avatarPresets[0].map };
             opponentAvatars.push(opponentsAvatarsChamp);
         }
@@ -633,7 +637,6 @@
             document.getElementById('timer-display').innerText = finalFormattedTime;
         }
 
-        /* Updates link format properties directly from the layout bar anchor link element */
         function updateInviteLink() {
             let gameLink = window.location.href;
             let inviteMessage = `Come play the Ultimate Sticks Cup with me! Let's see who can get the fastest speedrun record. 🕹️🏆\nLink: ${gameLink}`;
