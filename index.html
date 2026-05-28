@@ -143,18 +143,20 @@
             text-decoration: underline;
         }
 
-        .avatar-grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
+        /* Container updated to cleanly scale high-res vector graphics */
+        .avatar-container {
             width: 64px;
             height: 64px;
             margin: 0 auto 10px auto;
-            border: 3px solid var(--pencil-gray);
-            background: #fff;
-            image-rendering: pixelated;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .pixel { width: 8px; height: 8px; }
+        .avatar-container svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.15));
+        }
 
         .stick {
             display: inline-block;
@@ -235,7 +237,7 @@
             border: 6px solid var(--pencil-gray);
             box-shadow: 20px 20px 0 rgba(0,0,0,0.2);
             z-index: 10;
-            width: 320px;
+            width: 340px;
         }
         .modal-overlay {
             display: none;
@@ -282,17 +284,22 @@
             display: flex;
             justify-content: space-around;
             margin: 15px 0;
-            gap: 5px;
+            gap: 8px;
         }
         .avatar-option {
             cursor: pointer;
             border: 3px solid transparent;
-            padding: 2px;
-            border-radius: 5px;
+            padding: 5px;
+            border-radius: 10px;
+            transition: all 0.2s;
         }
         .avatar-option.selected {
             border-color: var(--crayon-blue);
             background: #ebf8ff;
+        }
+        .avatar-option .avatar-container {
+            width: 50px;
+            height: 50px;
         }
 
         .avatar-label {
@@ -388,7 +395,7 @@
 
     <div class="game-board">
         <div class="player-side" id="p1-card">
-            <div class="avatar-grid" id="p1-avatar-display"></div>
+            <div class="avatar-container" id="p1-avatar-display"></div>
             <h3 id="p1-name-display">&nbsp;</h3>
             <div class="hand-btn" id="p1L" onclick="selectHand('p1', 'L')">
                 <span class="hand-label">LEFT</span>
@@ -402,7 +409,7 @@
         </div>
 
         <div class="player-side" id="comp-card">
-            <div class="avatar-grid" id="comp-avatar-display"></div>
+            <div class="avatar-container" id="comp-avatar-display"></div>
             <h3 id="opponent-name">Leo</h3>
             <div class="hand-btn" id="compL" onclick="selectHand('comp', 'L')">
                 <span class="hand-label">LEFT</span>
@@ -434,23 +441,23 @@
 
     <div class="modal" id="name-modal" style="display: none;">
         <h3>Welcome to the Cup!</h3>
-        <p>Choose Your Player Color:</p>
+        <p>Choose Your Sports Ball:</p>
         <div class="avatar-selection-box">
             <div class="avatar-option selected" id="opt0" onclick="chooseAvatarPreset(0)">
-                <div class="avatar-grid" id="preset-preview-0"></div>
-                <div class="avatar-label">Red Hat</div>
+                <div class="avatar-container" id="preset-preview-0"></div>
+                <div class="avatar-label">Baseball</div>
             </div>
             <div class="avatar-option" id="opt1" onclick="chooseAvatarPreset(1)">
-                <div class="avatar-grid" id="preset-preview-1"></div>
-                <div class="avatar-label">Blue Hat</div>
+                <div class="avatar-container" id="preset-preview-1"></div>
+                <div class="avatar-label">Soccer</div>
             </div>
             <div class="avatar-option" id="opt2" onclick="chooseAvatarPreset(2)">
-                <div class="avatar-grid" id="preset-preview-2"></div>
-                <div class="avatar-label">Green Hat</div>
+                <div class="avatar-container" id="preset-preview-2"></div>
+                <div class="avatar-label">Football</div>
             </div>
             <div class="avatar-option" id="opt3" onclick="chooseAvatarPreset(3)">
-                <div class="avatar-grid" id="preset-preview-3"></div>
-                <div class="avatar-label">Orange Hat</div>
+                <div class="avatar-container" id="preset-preview-3"></div>
+                <div class="avatar-label">Basketball</div>
             </div>
         </div>
         <p>What is Your Name?</p>
@@ -476,7 +483,7 @@
     </div>
 
     <script>
-        const poolNames = ["Enzo", "Jackson", "Jack", "Greyson", "Landon", "Jerry", "Gavin", "Joey"];
+        const poolNames = ["Enzo", "Gabby", "Colton", "Jack", "Jackson", "Izzy", "Greyson", "Jerry"];
         const maxLevels = 5;
         
         let opponents = [];
@@ -494,18 +501,16 @@
         let startTime = null;
         let finalFormattedTime = "00:00.00";
 
-        /* --- UPDATED CHARACTER PIXEL MAPS: BASEBALL HAT DESIGN ---
-           0 = Transparent, 1 = Hat Color, 2 = Face/Body
-        */
+        /* --- IMMACULATE HIGH-RES INLINE VECTOR BALL GRAPHICS ENGINE --- */
         const avatarPresets = [
-            // 0: Red Hat
-            { primary: '#d9534f', secondary: '#F3E5AB', map: [0,0,1,1,1,0,0,0, 0,1,1,1,1,1,0,0, 0,0,1,1,1,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,0,2,0,0,0, 0,0,2,0,2,0,0,0] },
-            // 1: Blue Hat
-            { primary: '#3182ce', secondary: '#F3E5AB', map: [0,0,1,1,1,0,0,0, 0,1,1,1,1,1,0,0, 0,0,1,1,1,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,0,2,0,0,0, 0,0,2,0,2,0,0,0] },
-            // 2: Green Hat
-            { primary: '#48bb78', secondary: '#F3E5AB', map: [0,0,1,1,1,0,0,0, 0,1,1,1,1,1,0,0, 0,0,1,1,1,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,0,2,0,0,0, 0,0,2,0,2,0,0,0] },
-            // 3: Orange Hat
-            { primary: '#f6ad55', secondary: '#F3E5AB', map: [0,0,1,1,1,0,0,0, 0,1,1,1,1,1,0,0, 0,0,1,1,1,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,2,2,0,0,0, 0,0,2,0,2,0,0,0, 0,0,2,0,2,0,0,0] }
+            // 0: Baseball
+            `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="45" fill="#f7fafc" stroke="#4a5568" stroke-width="4"/><path d="M 20 20 Q 45 45 20 80" fill="none" stroke="#e53e3e" stroke-width="3" stroke-dasharray="2,3"/><path d="M 80 20 Q 55 45 80 80" fill="none" stroke="#e53e3e" stroke-width="3" stroke-dasharray="2,3"/></svg>`,
+            // 1: Soccer Ball
+            `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="45" fill="#ffffff" stroke="#4a5568" stroke-width="4"/><polygon points="50,35 62,45 58,58 42,58 38,45" fill="#2d3748"/><path d="M 50 35 L 50 15 M 62 45 L 80 38 M 58 58 L 70 80 M 42 58 L 30 80 M 38 45 L 20 38" stroke="#4a5568" stroke-width="3"/><polygon points="50,15 58,5 42,5" fill="#2d3748" stroke="#4a5568" stroke-width="2"/><polygon points="80,38 92,32 88,50" fill="#2d3748" stroke="#4a5568" stroke-width="2"/><polygon points="70,80 80,92 60,92" fill="#2d3748" stroke="#4a5568" stroke-width="2"/><polygon points="30,80 40,92 20,92" fill="#2d3748" stroke="#4a5568" stroke-width="2"/><polygon points="20,38 12,50 8,32" fill="#2d3748" stroke="#4a5568" stroke-width="2"/></svg>`,
+            // 2: Football
+            `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M 15 50 C 15 15, 85 15, 85 50 C 85 85, 15 85, 15 50 Z" fill="#8a4b2d" stroke="#4a5568" stroke-width="4"/><path d="M 30 50 L 70 50 M 40 42 L 40 58 M 48 42 L 48 58 M 56 42 L 56 58 M 64 42 L 64 58" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/><path d="M 22 28 C 18 40, 18 60, 22 72 M 78 28 C 82 40, 82 60, 78 72" fill="none" stroke="#ffffff" stroke-width="3"/></svg>`,
+            // 3: Basketball
+            `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="45" fill="#ed8936" stroke="#4a5568" stroke-width="4"/><path d="M 15 50 L 85 50 M 50 15 L 50 85" stroke="#2d3748" stroke-width="3"/><path d="M 22 22 Q 50 50 22 78" fill="none" stroke="#2d3748" stroke-width="3"/><path d="M 78 22 Q 50 50 78 78" fill="none" stroke="#2d3748" stroke-width="3"/></svg>`
         ];
 
         let audioCtx = null;
@@ -596,20 +601,10 @@
             }
         }
 
-        function renderAvatar(targetElementId, preset) {
+        /* Upgraded to safely load direct string-based high-res vector graphics smoothly */
+        function renderAvatar(targetElementId, svgString) {
             let container = document.getElementById(targetElementId);
-            container.innerHTML = '';
-            
-            let frag = document.createDocumentFragment();
-            for (let val of preset.map) {
-                let pixel = document.createElement('div');
-                pixel.className = 'pixel';
-                if (val === 1) pixel.style.backgroundColor = preset.primary;
-                else if (val === 2) pixel.style.backgroundColor = preset.secondary;
-                else pixel.style.backgroundColor = 'transparent';
-                frag.appendChild(pixel);
-            }
-            container.appendChild(frag);
+            container.innerHTML = svgString;
         }
 
         function generateRandomOpponents() {
@@ -622,8 +617,7 @@
                 opponentAvatars.push(avatarPresets[Math.floor(Math.random() * avatarPresets.length)]);
             }
             opponents.push("The Champ");
-            let opponentsAvatarsChamp = { primary: '#d9534f', secondary: '#ECC94B', map: avatarPresets[0].map };
-            opponentAvatars.push(opponentsAvatarsChamp);
+            opponentAvatars.push(avatarPresets[3]); // Champion uses Basketball
         }
 
         function startGlobalTimer() {
@@ -859,22 +853,6 @@
 
         function disableSplitButton() { document.getElementById('p1-split-btn').disabled = true; }
 
-        function selectHand(player, hand) {
-            if (isMatchOver || currentTurn === 'comp') return; 
-            if (hands[player][hand] === 0) return; 
-
-            if (!selectedAttacker) {
-                if (player !== 'p1') { alert(`Pick your OWN sticks first!`); return; }
-                selectedAttacker = { player, hand }; playSound('select'); updateDisplay();
-            } else {
-                if (player === 'p1') { selectedAttacker = null; updateDisplay(); return; }
-                let damage = hands[selectedAttacker.player][selectedAttacker.hand];
-                hands[player][hand] += damage; selectedAttacker = null;
-                playSound('hit'); currentTurn = 'comp'; updateDisplay();
-                setTimeout(computerBrain, 800);
-            }
-        }
-
         /* --- STAGE-SCALED MINIMAX ARTIFICIAL INTELLIGENCE --- */
         function computerBrain() {
             if (isMatchOver) return;
@@ -1014,30 +992,35 @@
             return 'ongoing';
         }
 
-        function evaluateState(state) {
-            let score = 0;
-            
-            let compAlive = 0;
-            if (state.comp.L > 0) compAlive++;
-            if (state.comp.R > 0) compAlive++;
-            
-            let p1Alive = 0;
-            if (state.p1.L > 0) p1Alive++;
-            if (state.p1.R > 0) p1Alive++;
+        function fillVisuals(p, h, val, btn, container) {
+             if (val >= 5 || val === 0) {
+                 btn.classList.add('dead');
+                 hands[p][h] = 0;
+                 container.innerHTML = '';
+                 return false;
+             } else {
+                 btn.classList.remove('dead');
+                 let markup = '';
+                 for(let i=0; i<val; i++) { markup += '<span class="stick"></span>'; }
+                 container.innerHTML = markup;
+                 return true;
+             }
+        }
 
-            score += (compAlive * 40);
-            score -= (p1Alive * 50);
+        function selectHand(player, hand) {
+            if (isMatchOver || currentTurn === 'comp') return; 
+            if (hands[player][hand] === 0) return; 
 
-            if (state.p1.L > 0) {
-                if (state.comp.L > 0 && (state.p1.L + state.comp.L >= 5)) score -= 25;
-                if (state.comp.R > 0 && (state.p1.L + state.comp.R >= 5)) score -= 25;
+            if (!selectedAttacker) {
+                if (player !== 'p1') { alert(`Pick your OWN sticks first!`); return; }
+                selectedAttacker = { player, hand }; playSound('select'); updateDisplay();
+            } else {
+                if (player === 'p1') { selectedAttacker = null; updateDisplay(); return; }
+                let damage = hands[selectedAttacker.player][selectedAttacker.hand];
+                hands[player][hand] += damage; selectedAttacker = null;
+                playSound('hit'); currentTurn = 'comp'; updateDisplay();
+                setTimeout(computerBrain, 800);
             }
-            if (state.p1.R > 0) {
-                if (state.comp.L > 0 && (state.p1.R + state.comp.L >= 5)) score -= 25;
-                if (state.comp.R > 0 && (state.p1.R + state.comp.R >= 5)) score -= 25;
-            }
-
-            return score;
         }
 
         function cloneState(state) {
